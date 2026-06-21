@@ -49,6 +49,11 @@ class CmsController extends Controller
             $settings[$key] = Setting::get($key);
         }
 
+        // Fall back to .env for paystack_public_key if not set in DB
+        if (empty($settings['paystack_public_key'])) {
+            $settings['paystack_public_key'] = env('PAYSTACK_PUBLIC_KEY');
+        }
+
         // Cast booleans
         $settings['maintenance_mode']         = (bool) $settings['maintenance_mode'];
         $settings['cash_on_delivery_enabled'] = (bool) $settings['cash_on_delivery_enabled'];
