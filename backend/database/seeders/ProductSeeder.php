@@ -100,11 +100,15 @@ class ProductSeeder extends Seeder
         foreach ($products as $data) {
             $tags = $data['tags'] ?? null;
             unset($data['tags']);
-            $product = Product::create(array_merge($data, [
-                'slug' => Str::slug($data['name']),
-                'sku'  => 'SP-' . strtoupper(Str::random(8)),
-                'tags' => $tags,
-            ]));
+            $slug = Str::slug($data['name']);
+            Product::firstOrCreate(
+                ['slug' => $slug],
+                array_merge($data, [
+                    'slug' => $slug,
+                    'sku'  => 'SP-' . strtoupper(Str::random(8)),
+                    'tags' => $tags,
+                ])
+            );
         }
     }
 }

@@ -32,23 +32,28 @@ class CategorySeeder extends Seeder
         ];
 
         foreach ($categories as $i => $data) {
-            $parent = Category::create([
-                'name'        => $data['name'],
-                'slug'        => Str::slug($data['name']),
-                'icon'        => $data['icon'],
-                'is_active'   => true,
-                'is_featured' => $data['is_featured'],
-                'sort_order'  => $i + 1,
-            ]);
+            $parent = Category::firstOrCreate(
+                ['slug' => Str::slug($data['name'])],
+                [
+                    'name'        => $data['name'],
+                    'icon'        => $data['icon'],
+                    'is_active'   => true,
+                    'is_featured' => $data['is_featured'],
+                    'sort_order'  => $i + 1,
+                ]
+            );
 
             foreach ($data['children'] as $j => $child) {
-                Category::create([
-                    'parent_id'  => $parent->id,
-                    'name'       => $child,
-                    'slug'       => Str::slug($child) . '-' . $parent->id,
-                    'is_active'  => true,
-                    'sort_order' => $j + 1,
-                ]);
+                $childSlug = Str::slug($child) . '-' . $parent->id;
+                Category::firstOrCreate(
+                    ['slug' => $childSlug],
+                    [
+                        'parent_id'  => $parent->id,
+                        'name'       => $child,
+                        'is_active'  => true,
+                        'sort_order' => $j + 1,
+                    ]
+                );
             }
         }
     }
