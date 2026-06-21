@@ -1,6 +1,6 @@
-// Physical device: replace with your PC's WiFi IP (run `ipconfig` → IPv4 under Wi-Fi adapter)
-// Emulator: use http://10.0.2.2:8000/api/v1
-export const API_BASE_URL = 'http://YOUR_PC_WIFI_IP:8000/api/v1';
+// API_BASE_URL is now managed in src/config/api.ts — change it there.
+// Emulator default: http://10.0.2.2:8000/api/v1
+export const API_BASE_URL = 'http://10.0.2.2:8000/api/v1';
 export const PAYSTACK_PUBLIC_KEY = 'pk_test_xxxxxxxxxxxxxxxxxxxx';
 export const ONESIGNAL_APP_ID = 'your-onesignal-app-id';
 
