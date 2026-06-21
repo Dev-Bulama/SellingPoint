@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS, SIZES } from '../../constants';
@@ -14,13 +14,7 @@ const MenuItem = ({ iconName, label, onPress, color = COLORS.text }: any) => (
 
 export default function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuthStore();
-
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
-  };
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -61,12 +55,31 @@ export default function ProfileScreen({ navigation }: any) {
 
       <View style={styles.section}>
         <View style={styles.menuGroup}>
-          <MenuItem iconName="log-out-outline" label="Logout" onPress={handleLogout} color={COLORS.danger} />
+          <MenuItem iconName="log-out-outline" label="Logout" onPress={() => setShowLogoutModal(true)} color={COLORS.danger} />
         </View>
       </View>
 
       <Text style={styles.version}>Sellingpoint v1.0.0</Text>
       <View style={{ height: 32 }} />
+
+      {/* ── Logout Modal ── */}
+      <Modal visible={showLogoutModal} transparent animationType="fade" onRequestClose={() => setShowLogoutModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalIconWrap}>
+              <IonIcon name="log-out-outline" size={32} color={COLORS.primary} />
+            </View>
+            <Text style={styles.modalTitle}>Logout</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to logout of your account?</Text>
+            <TouchableOpacity style={styles.modalLogoutBtn} onPress={() => { setShowLogoutModal(false); logout(); }}>
+              <Text style={styles.modalLogoutText}>Yes, Logout</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowLogoutModal(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -93,4 +106,28 @@ const styles = StyleSheet.create({
   menuIcon: { marginRight: 14 },
   menuLabel: { flex: 1, fontSize: 15 },
   version: { textAlign: 'center', color: COLORS.textMuted, fontSize: 12, marginTop: 24 },
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  modalCard: {
+    backgroundColor: COLORS.white, borderRadius: 20, padding: 28,
+    width: '100%', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 10,
+  },
+  modalIconWrap: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: COLORS.primary + '15',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
+  modalMessage: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  modalLogoutBtn: {
+    backgroundColor: COLORS.primary, borderRadius: SIZES.borderRadius,
+    paddingVertical: 14, width: '100%', alignItems: 'center', marginBottom: 10,
+  },
+  modalLogoutText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
+  modalCancelBtn: {
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.borderRadius,
+    paddingVertical: 13, width: '100%', alignItems: 'center',
+  },
+  modalCancelText: { color: COLORS.text, fontSize: 15 },
 });

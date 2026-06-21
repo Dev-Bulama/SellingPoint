@@ -8,6 +8,25 @@ import { useAuthStore } from '../../store/authStore';
 import { COLORS, SIZES } from '../../constants';
 import { getErrorMessage } from '../../utils/currency';
 
+type FieldProps = {
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder?: string;
+  keyboardType?: any;
+  autoCapitalize?: any;
+  secureTextEntry?: boolean;
+};
+
+function Field({ label, value, onChangeText, ...props }: FieldProps) {
+  return (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput style={styles.input} value={value} onChangeText={onChangeText} {...props} />
+    </View>
+  );
+}
+
 export default function RegisterScreen({ navigation }: any) {
   const { register, isLoading } = useAuthStore();
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password_confirmation: '' });
@@ -27,14 +46,6 @@ export default function RegisterScreen({ navigation }: any) {
     }
   };
 
-  const Field = ({ label, field, ...props }: any) => (
-    <View style={styles.inputGroup}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput style={styles.input} value={form[field as keyof typeof form]}
-        onChangeText={(v) => update(field, v)} {...props} />
-    </View>
-  );
-
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -47,11 +58,11 @@ export default function RegisterScreen({ navigation }: any) {
 
         {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
 
-        <Field label="Full Name" field="name" placeholder="John Doe" />
-        <Field label="Email Address" field="email" placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
-        <Field label="Phone Number" field="phone" placeholder="+234 800 000 0000" keyboardType="phone-pad" />
-        <Field label="Password" field="password" placeholder="Min. 8 characters" secureTextEntry />
-        <Field label="Confirm Password" field="password_confirmation" placeholder="Repeat password" secureTextEntry />
+        <Field label="Full Name" value={form.name} onChangeText={v => update('name', v)} placeholder="John Doe" />
+        <Field label="Email Address" value={form.email} onChangeText={v => update('email', v)} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
+        <Field label="Phone Number" value={form.phone} onChangeText={v => update('phone', v)} placeholder="+234 800 000 0000" keyboardType="phone-pad" />
+        <Field label="Password" value={form.password} onChangeText={v => update('password', v)} placeholder="Min. 8 characters" secureTextEntry />
+        <Field label="Confirm Password" value={form.password_confirmation} onChangeText={v => update('password_confirmation', v)} placeholder="Repeat password" secureTextEntry />
 
         <TouchableOpacity style={styles.registerBtn} onPress={handleRegister} disabled={isLoading}>
           {isLoading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.registerText}>Create Account</Text>}
@@ -72,7 +83,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   content: { padding: SIZES.screenPadding, paddingTop: 40 },
   backBtn: { marginBottom: 24 },
-  backText: { color: COLORS.primary, fontSize: 15 },
   title: { fontSize: 26, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
   subtitle: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 32 },
   errorBox: { backgroundColor: '#FEE', borderRadius: 8, padding: 12, marginBottom: 16 },

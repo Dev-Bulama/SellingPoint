@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
+import { useCartStore } from '../../store/cartStore';
 
 export default function OrderSuccessScreen({ route, navigation }: any) {
   const { orderNumber } = route.params;
+  const { clearCart } = useCartStore();
+
+  useEffect(() => {
+    clearCart();
+  }, []);
 
   return (
     <View style={styles.container}>

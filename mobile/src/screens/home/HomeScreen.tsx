@@ -109,6 +109,30 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
 }
 
 // ---------------------------------------------------------------------------
+// BannerItem — shows image with fallback to colored card on load error
+// ---------------------------------------------------------------------------
+function BannerItem({ banner }: { banner: Banner }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showFallback = !banner.image_url || imgFailed;
+  return showFallback ? (
+    <View style={[styles.bannerBg, { backgroundColor: banner.bg_color || COLORS.primary }]}>
+      <Text style={styles.bannerTitle}>{banner.title}</Text>
+      {banner.subtitle && <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>}
+      {banner.button_text && (
+        <View style={styles.bannerBtn}><Text style={styles.bannerBtnText}>{banner.button_text}</Text></View>
+      )}
+    </View>
+  ) : (
+    <Image
+      source={{ uri: banner.image_url! }}
+      style={styles.bannerImage}
+      resizeMode="cover"
+      onError={() => setImgFailed(true)}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SectionHeader
 // ---------------------------------------------------------------------------
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
@@ -263,25 +287,7 @@ export default function HomeScreen({ navigation }: any) {
                 style={styles.bannerItem}
                 onPress={() => banner.link && goToList({ title: banner.title })}
               >
-                {banner.image_url ? (
-                  <Image
-                    source={{ uri: banner.image_url }}
-                    style={styles.bannerImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.bannerBg, { backgroundColor: banner.bg_color || COLORS.primary }]}>
-                    <Text style={styles.bannerTitle}>{banner.title}</Text>
-                    {banner.subtitle && (
-                      <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
-                    )}
-                    {banner.button_text && (
-                      <View style={styles.bannerBtn}>
-                        <Text style={styles.bannerBtnText}>{banner.button_text}</Text>
-                      </View>
-                    )}
-                  </View>
-                )}
+                <BannerItem banner={banner} />
               </TouchableOpacity>
             ))}
           </ScrollView>

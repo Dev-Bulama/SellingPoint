@@ -145,11 +145,9 @@ class ProductController extends Controller
 
     public function categories(): JsonResponse
     {
-        $categories = Cache::remember('api:categories', 3600, fn() =>
-            Category::where('is_active', true)->whereNull('parent_id')
-                ->with('children')->withCount('products')
-                ->orderBy('sort_order')->get()
-        );
+        $categories = Category::where('is_active', true)->whereNull('parent_id')
+            ->with('children')->withCount('products')
+            ->orderBy('sort_order')->get();
         return response()->json(['data' => CategoryResource::collection($categories)]);
     }
 
