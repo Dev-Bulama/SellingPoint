@@ -24,7 +24,7 @@
  */
 
 // ─── Change these URLs to match your backend ──────────────────────────────────
-const LOCAL_API_URL      = 'http://10.0.2.2:8000/api/v1';
+const LOCAL_API_URL      = 'http://10.153.6.102:8000/api/v1';
 const PRODUCTION_API_URL = 'https://sellingpoint.ng/api/v1';
 // ──────────────────────────────────────────────────────────────────────────────
 
