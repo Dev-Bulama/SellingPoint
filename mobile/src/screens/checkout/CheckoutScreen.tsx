@@ -21,6 +21,7 @@ export default function CheckoutScreen({ navigation }: any) {
   const [isLoading, setIsLoading] = useState(false);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [orderNotes, setOrderNotes] = useState('');
   const { cart, fetchCart } = useCartStore();
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function CheckoutScreen({ navigation }: any) {
         address_id: selectedAddress.id,
         payment_method: paymentMethod,
         coupon_code: couponCode || undefined,
+        notes: orderNotes || undefined,
       });
       const order = res.data.data;
 
@@ -197,6 +199,22 @@ export default function CheckoutScreen({ navigation }: any) {
               <Text style={styles.totalValue}>{formatCurrency(total)}</Text>
             </View>
           </View>
+        </View>
+
+        {/* Order Notes */}
+        <View style={styles.section}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <IonIcon name="create-outline" size={18} color={COLORS.text} style={{ marginRight: 6 }} />
+            <Text style={styles.sectionTitle}>Order Notes</Text>
+          </View>
+          <TextInput
+            style={[styles.couponInput, { height: 80, textAlignVertical: 'top' }]}
+            placeholder="Add a note for your order (optional)"
+            value={orderNotes}
+            onChangeText={setOrderNotes}
+            multiline
+            numberOfLines={3}
+          />
         </View>
 
         <View style={{ height: 24 }} />
