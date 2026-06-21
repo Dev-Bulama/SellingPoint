@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, AppState } from 'react-native';
+import { View, StyleSheet, DeviceEventEmitter } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -38,12 +38,9 @@ export default function AppNavigator() {
     };
     init();
 
-    // Refresh onboarding flag when app resumes (handles onboarding completion)
-    const sub = AppState.addEventListener('change', async (state) => {
-      if (state === 'active') {
-        const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
-        if (seen === 'true') setHasSeenOnboarding(true);
-      }
+    // Onboarding screen emits this when the user finishes
+    const sub = DeviceEventEmitter.addListener('onboardingComplete', () => {
+      setHasSeenOnboarding(true);
     });
     return () => sub.remove();
   }, []);
@@ -88,8 +85,6 @@ export default function AppNavigator() {
         </Stack.Navigator>
       </NavigationContainer>
 
-      {/* Full-screen offline overlay — rendered outside NavigationContainer so it
-          covers everything, including any modals from nested navigators. */}
       {!isConnected && (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <NoInternetScreen onRetry={retry} />
@@ -99,7 +94,6 @@ export default function AppNavigator() {
   );
 }
 
-/** Compares semver strings. Returns negative if a < b, 0 if equal, positive if a > b. */
 function compareVersions(a: string, b: string): number {
   const pa = a.split('.').map(Number);
   const pb = b.split('.').map(Number);

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
@@ -14,13 +14,13 @@ const slides = [
 
 const ONBOARDING_KEY = 'has_seen_onboarding';
 
-export default function OnboardingScreen({ navigation }: any) {
+export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
   const finish = async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-    navigation.navigate('Auth');
+    DeviceEventEmitter.emit('onboardingComplete');
   };
 
   const handleNext = () => {
