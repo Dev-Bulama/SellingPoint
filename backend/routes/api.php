@@ -88,7 +88,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/',                [OrderController::class, 'index']);
             Route::post('checkout',        [OrderController::class, 'checkout']);
             Route::post('validate-coupon', [OrderController::class, 'validateCoupon']);
-            Route::get('{orderNumber}',    [OrderController::class, 'show']);
+            Route::get('{orderNumber}',       [OrderController::class, 'show']);
+            Route::get('{orderNumber}/track', [OrderController::class, 'track']);
             Route::post('{orderNumber}/cancel', [OrderController::class, 'cancel']);
         });
 

@@ -16,7 +16,7 @@ class Order extends Model
         'delivery_state', 'delivery_country', 'delivery_postal_code',
         'subtotal', 'shipping_fee', 'discount_amount', 'tax_amount', 'total',
         'status', 'payment_method', 'payment_status', 'coupon_code', 'notes',
-        'cancellation_reason', 'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at',
+        'cancellation_reason', 'confirmed_at', 'processing_at', 'shipped_at', 'delivered_at', 'cancelled_at',
     ];
 
     protected $casts = [
@@ -26,6 +26,7 @@ class Order extends Model
         'tax_amount' => 'decimal:2',
         'total' => 'decimal:2',
         'confirmed_at' => 'datetime',
+        'processing_at' => 'datetime',
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
         'cancelled_at' => 'datetime',

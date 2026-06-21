@@ -136,6 +136,45 @@ class OrderController extends Controller
         return response()->json(['message' => 'Order placed', 'data' => new OrderResource($order)], 201);
     }
 
+    public function track(Request $request, string $orderNumber): JsonResponse
+    {
+        $order = Order::where('order_number', $orderNumber)
+            ->where('user_id', $request->user()->id)
+            ->with(['items.product', 'payment', 'shippingZone'])
+            ->firstOrFail();
+
+        $statuses = [
+            'pending'    => ['label' => 'Order Placed',       'icon' => 'receipt-outline',          'done_at' => $order->created_at],
+            'confirmed'  => ['label' => 'Order Confirmed',    'icon' => 'checkmark-circle-outline',  'done_at' => $order->confirmed_at],
+            'processing' => ['label' => 'Processing',         'icon' => 'construct-outline',         'done_at' => $order->processing_at],
+            'shipped'    => ['label' => 'Shipped',            'icon' => 'cube-outline',              'done_at' => $order->shipped_at],
+            'delivered'  => ['label' => 'Delivered',          'icon' => 'home-outline',              'done_at' => $order->delivered_at],
+        ];
+
+        $statusKeys   = array_keys($statuses);
+        $currentIndex = array_search($order->status, $statusKeys);
+
+        $timeline = [];
+        foreach ($statuses as $i => $s) {
+            $idx = array_search($i, $statusKeys);
+            $timeline[] = [
+                'status'  => $i,
+                'label'   => $s['label'],
+                'icon'    => $s['icon'],
+                'done'    => $currentIndex !== false && $idx <= $currentIndex,
+                'done_at' => $s['done_at'],
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'order'    => new OrderResource($order),
+                'timeline' => $timeline,
+            ],
+        ]);
+    }
+
     public function cancel(Request $request, string $orderNumber): JsonResponse
     {
         $request->validate(['reason' => 'nullable|string|max:500']);
