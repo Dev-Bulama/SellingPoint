@@ -58,6 +58,7 @@ export default function ProductListScreen({ route, navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState(search || '');
   const [sort, setSort] = useState('latest');
+  const [error, setError] = useState('');
 
   // Use a ref to guard against concurrent fetches without isLoading in callback deps
   const loadingRef = useRef(false);
@@ -71,6 +72,7 @@ export default function ProductListScreen({ route, navigation }: any) {
 
     loadingRef.current = true;
     setIsLoading(true);
+    if (reset) setError('');
     try {
       const res = await productsApi.list({
         category_id: categoryId,
@@ -87,7 +89,12 @@ export default function ProductListScreen({ route, navigation }: any) {
       pageRef.current = reset ? 2 : currentPage + 1;
       setPage(pageRef.current);
       setProducts(prev => reset ? newProducts : [...prev, ...newProducts]);
-    } catch {}
+    } catch (e: any) {
+      if (reset) {
+        const msg = e?.response?.data?.message || e?.message || 'Failed to load products';
+        setError(msg);
+      }
+    }
     loadingRef.current = false;
     setIsLoading(false);
   }, [categoryId, brandId, searchText, sort]);
@@ -176,9 +183,9 @@ export default function ProductListScreen({ route, navigation }: any) {
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.empty}>
-              <IonIcon name="search" size={64} color={COLORS.border} style={{ marginBottom: 16 }} />
-              <Text style={styles.emptyText}>No products found</Text>
-              <Text style={styles.emptySubtext}>Try different search terms or filters</Text>
+              <IonIcon name={error ? 'warning-outline' : 'search'} size={64} color={COLORS.border} style={{ marginBottom: 16 }} />
+              <Text style={styles.emptyText}>{error ? 'Could not load products' : 'No products found'}</Text>
+              <Text style={styles.emptySubtext}>{error || 'Try different search terms or filters'}</Text>
             </View>
           ) : null
         }
