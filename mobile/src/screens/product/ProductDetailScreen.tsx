@@ -8,7 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SIZES } from '../../constants';
 import { productsApi } from '../../api/products';
 import { wishlistApi } from '../../api/wishlist';
-import { Product, ProductVariant, Review, ProductImage } from '../../types';
+import { Product, ProductVariant, Review, ProductImage as ProductImageType } from '../../types';
+import ProductImageComponent from '../../components/ProductImage';
 import { formatCurrency } from '../../utils/currency';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
@@ -112,6 +113,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const [inWishlist, setInWishlist] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [related, setRelated] = useState<Product[]>([]);
@@ -274,12 +276,19 @@ export default function ProductDetailScreen({ route, navigation }: any) {
               scrollEventThrottle={16}
             >
               {allImages.map((uri, idx) => (
-                <Image
-                  key={idx}
-                  source={{ uri }}
-                  style={styles.galleryImage}
-                  resizeMode="cover"
-                />
+                brokenImages.has(idx) ? (
+                  <View key={idx} style={[styles.galleryImage, styles.imagePlaceholder]}>
+                    <IonIcon name="image-outline" size={64} color={COLORS.grayMedium} />
+                  </View>
+                ) : (
+                  <Image
+                    key={idx}
+                    source={{ uri }}
+                    style={styles.galleryImage}
+                    resizeMode="cover"
+                    onError={() => setBrokenImages(prev => new Set(prev).add(idx))}
+                  />
+                )
               ))}
             </ScrollView>
           ) : (
@@ -459,15 +468,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                     onPress={() => navigation.replace('ProductDetail', { slug: p.slug })}
                   >
                     <View style={styles.relatedImageBox}>
-                      {p.thumbnail_url ? (
-                        <Image
-                          source={{ uri: p.thumbnail_url }}
-                          style={styles.relatedImage}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <IonIcon name="bag-handle-outline" size={32} color={COLORS.border} />
-                      )}
+                      <ProductImageComponent uri={p.thumbnail_url} style={styles.relatedImage} />
                     </View>
                     <Text style={styles.relatedName} numberOfLines={2}>{p.name}</Text>
                     <Text style={styles.relatedPrice}>{formatCurrency(p.effective_price)}</Text>
