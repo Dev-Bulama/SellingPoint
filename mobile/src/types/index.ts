@@ -39,6 +39,7 @@ export interface Brand {
   name: string;
   slug: string;
   logo_url?: string;
+  description?: string;
 }
 
 export interface ProductImage {
@@ -137,6 +138,8 @@ export interface Order {
   tax_amount: number;
   total: number;
   coupon_code?: string;
+  notes?: string;
+  cancellation_reason?: string;
   delivery: {
     name: string;
     phone: string;
