@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# React Native build output
+android/app/build/
+android/build/
+ios/build/
+ios/Pods/
+ios/DerivedData/
+
+# Release signing (never commit keystores or passwords)
+android/app/*.keystore
+android/gradle.properties
+
+# Metro bundler cache
+.metro-health-check*
+.bundle/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Test coverage
+coverage/
