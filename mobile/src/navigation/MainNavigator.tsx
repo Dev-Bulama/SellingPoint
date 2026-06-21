@@ -21,6 +21,9 @@ import AddAddressScreen from '../screens/profile/AddAddressScreen';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import PageScreen from '../screens/profile/PageScreen';
 import FaqScreen from '../screens/profile/FaqScreen';
+import SearchScreen from '../screens/search/SearchScreen';
+import OrderReceiptScreen from '../screens/profile/OrderReceiptScreen';
+import SupportScreen from '../screens/support/SupportScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -32,6 +35,7 @@ function HomeStackNav() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="Home" component={HomeScreen} />
+      <HomeStack.Screen name="Search" component={SearchScreen} />
       <HomeStack.Screen name="ProductList" component={ProductListScreen} />
       <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
@@ -69,6 +73,8 @@ function ProfileStackNav() {
       <ProfileStack.Screen name="AddAddress" component={AddAddressScreen} />
       <ProfileStack.Screen name="Orders" component={OrdersScreen} />
       <ProfileStack.Screen name="OrderDetail" component={OrderDetailScreen} />
+      <ProfileStack.Screen name="OrderReceipt" component={OrderReceiptScreen} />
+      <ProfileStack.Screen name="Support" component={SupportScreen} />
       <ProfileStack.Screen name="Page" component={PageScreen} />
       <ProfileStack.Screen name="FAQ" component={FaqScreen} />
     </ProfileStack.Navigator>
