@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use App\Notifications\PasswordResetOtpNotification;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -119,8 +120,7 @@ class AuthController extends Controller
             'otp_expires_at' => now()->addMinutes(15),
         ]);
 
-        // TODO: Send OTP via email notification
-        // $user->notify(new PasswordResetOtpNotification($otp));
+        $user->notify(new PasswordResetOtpNotification($otp));
 
         return response()->json(['message' => 'OTP sent to your email address']);
     }
