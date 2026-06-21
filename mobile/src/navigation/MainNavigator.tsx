@@ -160,7 +160,7 @@ export default function MainNavigator() {
       <Tab.Screen
         name="OrdersTab"
         component={OrdersStackNav}
-        options={{ tabBarLabel: 'Orders', tabBarIcon: ({ focused }) => <TabIcon name="Orders" focused={focused} /> }}
+        options={{ tabBarLabel: 'Track', tabBarIcon: ({ focused }) => <TabIcon name="Orders" focused={focused} /> }}
       />
       <Tab.Screen
         name="ProfileTab"

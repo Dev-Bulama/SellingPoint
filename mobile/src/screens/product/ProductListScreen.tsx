@@ -10,11 +10,11 @@ import { formatCurrency } from '../../utils/currency';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const SORT_OPTIONS = [
-  { label: 'Latest', value: 'latest' },
-  { label: 'Price ↑', value: 'price_asc' },
-  { label: 'Price ↓', value: 'price_desc' },
-  { label: 'Popular', value: 'popular' },
-  { label: 'Rating', value: 'rating' },
+  { label: 'Latest',      value: 'latest' },
+  { label: 'Price: Low',  value: 'price_asc' },
+  { label: 'Price: High', value: 'price_desc' },
+  { label: 'Popular',     value: 'popular' },
+  { label: 'Rating',      value: 'rating' },
 ];
 
 function ProductGridItem({ product, onPress }: { product: Product; onPress: () => void }) {
