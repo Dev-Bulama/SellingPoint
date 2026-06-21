@@ -20,6 +20,8 @@ export default function LoginScreen({ navigation }: any) {
     setError('');
     try {
       await login(email.trim().toLowerCase(), password);
+      // Dismiss the Auth modal — Main navigator re-renders with auth tabs unlocked
+      navigation.getParent()?.goBack();
     } catch (e) {
       setError(getErrorMessage(e));
     }

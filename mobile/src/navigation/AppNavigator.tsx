@@ -20,7 +20,7 @@ const ONBOARDING_KEY = 'has_seen_onboarding';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { isAuthenticated, loadUser } = useAuthStore();
+  const { loadUser } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(true);
   const [forceUpdate, setForceUpdate] = useState<{ required: boolean; minVersion: string } | null>(null);
@@ -38,14 +38,12 @@ export default function AppNavigator() {
     };
     init();
 
-    // Onboarding screen emits this when the user finishes
     const sub = DeviceEventEmitter.addListener('onboardingComplete', () => {
       setHasSeenOnboarding(true);
     });
     return () => sub.remove();
   }, []);
 
-  // Check settings for maintenance mode and force update
   useEffect(() => {
     const checkSettings = async () => {
       try {
@@ -56,7 +54,7 @@ export default function AppNavigator() {
           setForceUpdate({ required: true, minVersion: min });
         }
       } catch {
-        // non-fatal — skip if settings unavailable
+        // non-fatal
       }
     };
     checkSettings();
@@ -77,10 +75,13 @@ export default function AppNavigator() {
             />
           ) : !hasSeenOnboarding ? (
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          ) : isAuthenticated ? (
-            <Stack.Screen name="Main" component={MainNavigator} />
           ) : (
-            <Stack.Screen name="Auth" component={AuthNavigator} />
+            <>
+              {/* Main is always accessible — auth gating is per-tab inside MainNavigator */}
+              <Stack.Screen name="Main" component={MainNavigator} />
+              {/* Auth screens sit in the same root stack so tabs can push to them */}
+              <Stack.Screen name="Auth" component={AuthNavigator} options={{ animation: 'slide_from_bottom' }} />
+            </>
           )}
         </Stack.Navigator>
       </NavigationContainer>

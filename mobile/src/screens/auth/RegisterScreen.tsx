@@ -21,6 +21,7 @@ export default function RegisterScreen({ navigation }: any) {
     setError('');
     try {
       await register(form);
+      navigation.getParent()?.goBack();
     } catch (e) {
       setError(getErrorMessage(e));
     }

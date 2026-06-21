@@ -5,6 +5,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../constants';
 import { useCartStore } from '../store/cartStore';
+import { useAuthStore } from '../store/authStore';
+import GuestGate from '../components/GuestGate';
 import HomeScreen from '../screens/home/HomeScreen';
 import ProductListScreen from '../screens/product/ProductListScreen';
 import ProductDetailScreen from '../screens/product/ProductDetailScreen';
@@ -44,7 +46,11 @@ function HomeStackNav() {
   );
 }
 
-function CartStackNav() {
+function CartStackNav({ navigation }: any) {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) {
+    return <GuestGate navigation={navigation} title="Your Cart" message="Log in to view your cart and checkout." />;
+  }
   return (
     <CartStack.Navigator screenOptions={{ headerShown: false }}>
       <CartStack.Screen name="Cart" component={CartScreen} />
@@ -55,7 +61,11 @@ function CartStackNav() {
   );
 }
 
-function WishlistStackNav() {
+function WishlistStackNav({ navigation }: any) {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) {
+    return <GuestGate navigation={navigation} title="Your Wishlist" message="Log in to save products to your wishlist." />;
+  }
   return (
     <WishlistStack.Navigator screenOptions={{ headerShown: false }}>
       <WishlistStack.Screen name="Wishlist" component={WishlistScreen} />
@@ -64,7 +74,11 @@ function WishlistStackNav() {
   );
 }
 
-function ProfileStackNav() {
+function ProfileStackNav({ navigation }: any) {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) {
+    return <GuestGate navigation={navigation} title="Your Account" message="Log in to view your profile, orders, and settings." />;
+  }
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} />
