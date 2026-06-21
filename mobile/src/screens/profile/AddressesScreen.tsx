@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { Address } from '../../types';
@@ -31,7 +32,7 @@ export default function AddressesScreen({ navigation }: any) {
     setAddresses(prev => prev.map(a => ({ ...a, is_default: a.id === id })));
   };
 
-  useEffect(() => { load(); }, []);
+  useFocusEffect(useCallback(() => { load(); }, []));
 
   if (loading) return <View style={styles.loading}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 

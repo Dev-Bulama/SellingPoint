@@ -17,7 +17,9 @@ class CmsController extends Controller
     public function banners(Request $request): JsonResponse
     {
         $type    = $request->type ?? 'slider';
-        $banners = Banner::active()->where('type', $type)->orderBy('sort_order')->get();
+        $banners = \Illuminate\Support\Facades\Cache::remember("api:banners:{$type}", 600, fn() =>
+            Banner::active()->where('type', $type)->orderBy('sort_order')->get()
+        );
         return response()->json(['data' => BannerResource::collection($banners)]);
     }
 

@@ -12,6 +12,7 @@ use App\Models\Brand;
 use App\Models\RecentlyViewed;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
@@ -90,15 +91,19 @@ class ProductController extends Controller
 
     public function featured(): JsonResponse
     {
-        $products = Product::active()->featured()->inStock()
-            ->with(['images', 'category'])->limit(20)->get();
+        $products = Cache::remember('api:products:featured', 600, fn() =>
+            Product::active()->featured()->inStock()
+                ->with(['images', 'category'])->limit(20)->get()
+        );
         return response()->json(['data' => ProductResource::collection($products)]);
     }
 
     public function newArrivals(): JsonResponse
     {
-        $products = Product::active()->where('is_new_arrival', true)->inStock()
-            ->with(['images', 'category'])->latest()->limit(20)->get();
+        $products = Cache::remember('api:products:new-arrivals', 600, fn() =>
+            Product::active()->where('is_new_arrival', true)->inStock()
+                ->with(['images', 'category'])->latest()->limit(20)->get()
+        );
         return response()->json(['data' => ProductResource::collection($products)]);
     }
 
@@ -140,9 +145,11 @@ class ProductController extends Controller
 
     public function categories(): JsonResponse
     {
-        $categories = Category::where('is_active', true)->whereNull('parent_id')
-            ->with('children')->withCount('products')
-            ->orderBy('sort_order')->get();
+        $categories = Cache::remember('api:categories', 3600, fn() =>
+            Category::where('is_active', true)->whereNull('parent_id')
+                ->with('children')->withCount('products')
+                ->orderBy('sort_order')->get()
+        );
         return response()->json(['data' => CategoryResource::collection($categories)]);
     }
 

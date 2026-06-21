@@ -127,6 +127,40 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => vo
 // ---------------------------------------------------------------------------
 // HomeScreen
 // ---------------------------------------------------------------------------
+const CATEGORY_ICONS: Record<string, string> = {
+  'Electronics':       'phone-portrait-outline',
+  'Fashion':           'shirt-outline',
+  'Home & Living':     'home-outline',
+  'Beauty & Health':   'flower-outline',
+  'Sports & Outdoors': 'football-outline',
+  'Groceries':         'cart-outline',
+  'Smartphones':       'phone-portrait-outline',
+  'Laptops':           'laptop-outline',
+  'Tablets':           'tablet-portrait-outline',
+  'Smart Watches':     'watch-outline',
+  'Headphones':        'headset-outline',
+  'Cameras':           'camera-outline',
+  'Shoes':             'footsteps-outline',
+  'Bags & Purses':     'bag-handle-outline',
+  'Accessories':       'glasses-outline',
+  'Furniture':         'bed-outline',
+  'Kitchen & Dining':  'restaurant-outline',
+  'Bedding':           'bed-outline',
+  'Decor':             'color-palette-outline',
+  'Lighting':          'bulb-outline',
+  'Skincare':          'sparkles-outline',
+  'Hair Care':         'cut-outline',
+  'Makeup':            'rose-outline',
+  'Fragrances':        'flower-outline',
+  'Fresh Produce':     'leaf-outline',
+  'Beverages':         'wine-outline',
+  'Snacks':            'fast-food-outline',
+};
+
+function getCategoryIcon(name: string): string {
+  return CATEGORY_ICONS[name] ?? 'pricetag-outline';
+}
+
 export default function HomeScreen({ navigation }: any) {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -280,7 +314,7 @@ export default function HomeScreen({ navigation }: any) {
                 {cat.image_url ? (
                   <Image source={{ uri: cat.image_url }} style={styles.categoryImage} resizeMode="cover" />
                 ) : (
-                  <IonIcon name="pricetag-outline" size={24} color={COLORS.text} />
+                  <IonIcon name={getCategoryIcon(cat.name)} size={24} color={COLORS.primary} />
                 )}
               </View>
               <Text style={styles.categoryName} numberOfLines={2}>{cat.name}</Text>
@@ -452,12 +486,14 @@ const styles = StyleSheet.create({
   // Product Card
   productCard: {
     width: 160, backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius,
-    marginRight: 12,
-    elevation: 2, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4,
-    overflow: 'hidden',
+    marginRight: 12, marginBottom: 4,
+    elevation: 3, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6,
   },
-  productImageBox: { width: '100%', height: 140, backgroundColor: COLORS.grayLight, position: 'relative' },
+  productImageBox: {
+    width: '100%', height: 140, backgroundColor: COLORS.grayLight, position: 'relative',
+    borderTopLeftRadius: SIZES.borderRadius, borderTopRightRadius: SIZES.borderRadius, overflow: 'hidden',
+  },
   productImage: { width: '100%', height: '100%' },
   productImagePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   placeholderEmoji: { fontSize: 48 },

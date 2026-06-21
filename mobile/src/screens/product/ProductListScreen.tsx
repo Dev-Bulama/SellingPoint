@@ -225,13 +225,14 @@ const styles = StyleSheet.create({
   grid: { padding: 8, flexGrow: 1 },
   gridItem: {
     flex: 1, margin: 6, backgroundColor: COLORS.white,
-    borderRadius: SIZES.borderRadius, overflow: 'hidden',
-    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08, shadowRadius: 4,
+    borderRadius: SIZES.borderRadius,
+    elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 6,
   },
   gridImageBox: {
     height: 160, backgroundColor: COLORS.grayLight,
     alignItems: 'center', justifyContent: 'center', position: 'relative',
+    borderTopLeftRadius: SIZES.borderRadius, borderTopRightRadius: SIZES.borderRadius, overflow: 'hidden',
   },
   discountBadge: {
     position: 'absolute', top: 8, left: 8,
