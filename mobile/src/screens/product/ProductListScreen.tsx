@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, RefreshControl,
+  TextInput, ActivityIndicator, RefreshControl, ScrollView,
 } from 'react-native';
 import { COLORS, SIZES } from '../../constants';
 import { productsApi } from '../../api/products';
@@ -59,11 +59,17 @@ export default function ProductListScreen({ route, navigation }: any) {
   const [searchText, setSearchText] = useState(search || '');
   const [sort, setSort] = useState('latest');
 
-  const loadProducts = useCallback(async (reset = false) => {
-    if (isLoading) return;
-    const currentPage = reset ? 1 : page;
-    if (!reset && currentPage > lastPage) return;
+  // Use a ref to guard against concurrent fetches without isLoading in callback deps
+  const loadingRef = useRef(false);
+  const pageRef = useRef(1);
+  const lastPageRef = useRef(1);
 
+  const loadProducts = useCallback(async (reset = false) => {
+    if (loadingRef.current) return;
+    const currentPage = reset ? 1 : pageRef.current;
+    if (!reset && currentPage > lastPageRef.current) return;
+
+    loadingRef.current = true;
     setIsLoading(true);
     try {
       const res = await productsApi.list({
@@ -74,23 +80,43 @@ export default function ProductListScreen({ route, navigation }: any) {
         page: currentPage,
         per_page: 20,
       });
-      const newProducts = res.data.data;
-      setProducts(reset ? newProducts : [...products, ...newProducts]);
-      setLastPage(res.data.meta.last_page);
-      setPage(reset ? 2 : currentPage + 1);
+      const newProducts: Product[] = res.data.data;
+      const meta = res.data.meta;
+      lastPageRef.current = meta.last_page;
+      setLastPage(meta.last_page);
+      pageRef.current = reset ? 2 : currentPage + 1;
+      setPage(pageRef.current);
+      setProducts(prev => reset ? newProducts : [...prev, ...newProducts]);
     } catch {}
+    loadingRef.current = false;
     setIsLoading(false);
-  }, [categoryId, brandId, searchText, sort, page, lastPage, isLoading]);
+  }, [categoryId, brandId, searchText, sort]);
 
-  useEffect(() => { loadProducts(true); }, [categoryId, brandId, sort]);
+  useEffect(() => {
+    pageRef.current = 1;
+    lastPageRef.current = 1;
+    loadProducts(true);
+  }, [categoryId, brandId, sort]);
 
   const onRefresh = async () => {
     setRefreshing(true);
+    pageRef.current = 1;
+    lastPageRef.current = 1;
     await loadProducts(true);
     setRefreshing(false);
   };
 
-  const handleSearch = () => loadProducts(true);
+  const handleSearch = () => {
+    pageRef.current = 1;
+    lastPageRef.current = 1;
+    loadProducts(true);
+  };
+
+  const handleEndReached = () => {
+    if (products.length > 0 && pageRef.current <= lastPageRef.current) {
+      loadProducts(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -116,7 +142,12 @@ export default function ProductListScreen({ route, navigation }: any) {
         </View>
       </View>
 
-      <View style={styles.sortRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.sortScrollView}
+        contentContainerStyle={styles.sortRow}
+      >
         {SORT_OPTIONS.map((opt) => (
           <TouchableOpacity
             key={opt.value}
@@ -128,7 +159,7 @@ export default function ProductListScreen({ route, navigation }: any) {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={products}
@@ -139,7 +170,7 @@ export default function ProductListScreen({ route, navigation }: any) {
         renderItem={({ item }) => (
           <ProductGridItem product={item} onPress={() => navigation.navigate('ProductDetail', { slug: item.slug })} />
         )}
-        onEndReached={() => loadProducts()}
+        onEndReached={handleEndReached}
         onEndReachedThreshold={0.3}
         ListFooterComponent={isLoading ? <ActivityIndicator color={COLORS.primary} style={{ margin: 16 }} /> : null}
         ListEmptyComponent={
@@ -164,7 +195,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   backBtn: { padding: 4 },
-  backText: { fontSize: 22, color: COLORS.text },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   searchRow: { backgroundColor: COLORS.white, paddingHorizontal: 16, paddingBottom: 12 },
   searchBox: {
@@ -172,11 +202,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.grayLight, borderRadius: SIZES.borderRadius,
     paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border,
   },
-  searchIcon: { fontSize: 14, marginRight: 6 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: COLORS.text },
+  sortScrollView: { backgroundColor: COLORS.white, maxHeight: 52 },
   sortRow: {
-    flexDirection: 'row', backgroundColor: COLORS.white, paddingHorizontal: 12,
-    paddingBottom: 12, gap: 8,
+    flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 12, paddingTop: 4, gap: 8,
   },
   sortChip: {
     paddingHorizontal: 12, paddingVertical: 6,
@@ -186,7 +215,7 @@ const styles = StyleSheet.create({
   activeSortChip: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   sortText: { fontSize: 12, color: COLORS.text },
   activeSortText: { color: COLORS.white, fontWeight: '600' },
-  grid: { padding: 8 },
+  grid: { padding: 8, flexGrow: 1 },
   gridItem: {
     flex: 1, margin: 6, backgroundColor: COLORS.white,
     borderRadius: SIZES.borderRadius, overflow: 'hidden',
@@ -197,7 +226,6 @@ const styles = StyleSheet.create({
     height: 160, backgroundColor: COLORS.grayLight,
     alignItems: 'center', justifyContent: 'center', position: 'relative',
   },
-  gridEmoji: { fontSize: 52 },
   discountBadge: {
     position: 'absolute', top: 8, left: 8,
     backgroundColor: COLORS.accent, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2,
@@ -215,8 +243,7 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center' },
   star: { fontSize: 11, color: COLORS.text },
   soldText: { fontSize: 11, color: COLORS.textMuted },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48 },
-  emptyEmoji: { fontSize: 64, marginBottom: 16 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48, marginTop: 80 },
   emptyText: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center' },
 });
