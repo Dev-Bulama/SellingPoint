@@ -15,10 +15,15 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   HomeTab: undefined;
-  SearchTab: undefined;
   CartTab: undefined;
-  WishlistTab: undefined;
+  OrdersTab: undefined;
   ProfileTab: undefined;
+};
+
+export type OrdersStackParamList = {
+  OrderTracking: undefined;
+  OrderDetail: { orderNumber: string };
+  OrderReceipt: { orderNumber: string };
 };
 
 export type HomeStackParamList = {

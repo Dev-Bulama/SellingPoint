@@ -15,7 +15,7 @@ import CheckoutScreen from '../screens/checkout/CheckoutScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import OrderDetailScreen from '../screens/order/OrderDetailScreen';
 import OrdersScreen from '../screens/order/OrdersScreen';
-import WishlistScreen from '../screens/wishlist/WishlistScreen';
+import OrderTrackingScreen from '../screens/order/OrderTrackingScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
@@ -31,7 +31,7 @@ import SupportScreen from '../screens/support/SupportScreen';
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const CartStack = createNativeStackNavigator();
-const WishlistStack = createNativeStackNavigator();
+const OrdersStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 
 function HomeStackNav() {
@@ -61,16 +61,23 @@ function CartStackNav({ navigation }: any) {
   );
 }
 
-function WishlistStackNav({ navigation }: any) {
+function OrdersStackNav({ navigation }: any) {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) {
-    return <GuestGate navigation={navigation} title="Your Wishlist" message="Log in to save products to your wishlist." />;
+    return (
+      <GuestGate
+        navigation={navigation}
+        title="Track Your Orders"
+        message="Log in to view your order history and track deliveries."
+      />
+    );
   }
   return (
-    <WishlistStack.Navigator screenOptions={{ headerShown: false }}>
-      <WishlistStack.Screen name="Wishlist" component={WishlistScreen} />
-      <WishlistStack.Screen name="ProductDetail" component={ProductDetailScreen} />
-    </WishlistStack.Navigator>
+    <OrdersStack.Navigator screenOptions={{ headerShown: false }}>
+      <OrdersStack.Screen name="OrderTracking" component={OrderTrackingScreen} />
+      <OrdersStack.Screen name="OrderDetail" component={OrderDetailScreen} />
+      <OrdersStack.Screen name="OrderReceipt" component={OrderReceiptScreen} />
+    </OrdersStack.Navigator>
   );
 }
 
@@ -97,20 +104,19 @@ function ProfileStackNav({ navigation }: any) {
 }
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const iconMap: Record<string, string> = {
-    Home: 'home',
-    Cart: 'cart-outline',
-    Wishlist: 'heart',
-    Profile: 'person-outline',
+  const iconMap: Record<string, [string, string]> = {
+    Home:    ['home',            'home-outline'],
+    Cart:    ['cart',            'cart-outline'],
+    Orders:  ['receipt',         'receipt-outline'],
+    Profile: ['person',          'person-outline'],
   };
-  const size = focused ? 24 : 20;
-  const opacity = focused ? 1 : 0.6;
+  const [activeIcon, inactiveIcon] = iconMap[name] ?? ['ellipse', 'ellipse-outline'];
+  const size = focused ? 24 : 22;
   return (
     <IonIcon
-      name={iconMap[name]}
+      name={focused ? activeIcon : inactiveIcon}
       size={size}
       color={focused ? COLORS.primary : COLORS.gray}
-      style={{ opacity }}
     />
   );
 }
@@ -147,19 +153,19 @@ export default function MainNavigator() {
         options={{ tabBarLabel: 'Home', tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} /> }}
       />
       <Tab.Screen
-        name="WishlistTab"
-        component={WishlistStackNav}
-        options={{ tabBarLabel: 'Wishlist', tabBarIcon: ({ focused }) => <TabIcon name="Wishlist" focused={focused} /> }}
-      />
-      <Tab.Screen
         name="CartTab"
         component={CartStackNav}
         options={{ tabBarLabel: 'Cart', tabBarIcon: ({ focused }) => <CartTabIcon focused={focused} /> }}
       />
       <Tab.Screen
+        name="OrdersTab"
+        component={OrdersStackNav}
+        options={{ tabBarLabel: 'Orders', tabBarIcon: ({ focused }) => <TabIcon name="Orders" focused={focused} /> }}
+      />
+      <Tab.Screen
         name="ProfileTab"
         component={ProfileStackNav}
-        options={{ tabBarLabel: 'Profile', tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} /> }}
+        options={{ tabBarLabel: 'Account', tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} /> }}
       />
     </Tab.Navigator>
   );
