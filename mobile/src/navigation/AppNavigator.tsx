@@ -37,6 +37,15 @@ export default function AppNavigator() {
       setIsLoading(false);
     };
     init();
+
+    // Refresh onboarding flag when app resumes (handles onboarding completion)
+    const sub = AppState.addEventListener('change', async (state) => {
+      if (state === 'active') {
+        const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
+        if (seen === 'true') setHasSeenOnboarding(true);
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   // Check settings for maintenance mode and force update

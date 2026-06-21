@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
 
@@ -11,16 +12,23 @@ const slides = [
   { id: '3', iconName: 'lock-closed-outline', title: 'Safe & Secure Payments', subtitle: 'Pay with cards, bank transfer or cash on delivery' },
 ];
 
+const ONBOARDING_KEY = 'has_seen_onboarding';
+
 export default function OnboardingScreen({ navigation }: any) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+
+  const finish = async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    navigation.navigate('Auth');
+  };
 
   const handleNext = () => {
     if (currentIndex < slides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
       setCurrentIndex(currentIndex + 1);
     } else {
-      navigation.replace('Auth');
+      finish();
     }
   };
 
@@ -56,7 +64,7 @@ export default function OnboardingScreen({ navigation }: any) {
           </Text>
         </TouchableOpacity>
         {currentIndex < slides.length - 1 && (
-          <TouchableOpacity onPress={() => navigation.replace('Auth')}>
+          <TouchableOpacity onPress={finish}>
             <Text style={styles.skip}>Skip</Text>
           </TouchableOpacity>
         )}
@@ -68,7 +76,6 @@ export default function OnboardingScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   slide: { width, flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emoji: { fontSize: 100, marginBottom: 32 },
   title: { fontSize: 28, fontWeight: 'bold', color: COLORS.text, textAlign: 'center', marginBottom: 16 },
   subtitle: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 24 },
   footer: { paddingHorizontal: 24, paddingBottom: 48, alignItems: 'center' },
