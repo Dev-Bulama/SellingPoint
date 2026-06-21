@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   FlatList, RefreshControl, Dimensions, Image, Animated,
@@ -132,13 +132,11 @@ export default function HomeScreen({ navigation }: any) {
   const [featured, setFeatured] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [flashSales, setFlashSales] = useState<Product[]>([]);
+  const [flashSaleEnd, setFlashSaleEnd] = useState<Date | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const { fetchCart } = useCartStore();
-
-  // Flash sale countdown: ends 2 hours from first render
-  const flashSaleEnd = useRef(new Date(Date.now() + 2 * 3600 * 1000)).current;
 
   const loadRecentlyViewed = useCallback(async () => {
     try {
@@ -149,18 +147,23 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      const [bannersRes, featuredRes, newArrRes, flashRes, catsRes] = await Promise.all([
+      const [bannersRes, featuredRes, newArrRes, flashRes, catsRes, cmsFlashRes] = await Promise.all([
         cmsApi.banners('slider').catch(() => ({ data: { data: [] } })),
         productsApi.featured().catch(() => ({ data: { data: [] } })),
         productsApi.newArrivals().catch(() => ({ data: { data: [] } })),
         productsApi.flashSales().catch(() => ({ data: { data: [] } })),
         productsApi.categories().catch(() => ({ data: { data: [] } })),
+        cmsApi.flashSales().catch(() => ({ data: { data: [] } })),
       ]);
       setBanners(bannersRes.data.data);
       setFeatured(featuredRes.data.data);
       setNewArrivals(newArrRes.data.data);
       setFlashSales(flashRes.data.data);
       setCategories(catsRes.data.data);
+      const cmsFlashSales = cmsFlashRes.data.data;
+      if (Array.isArray(cmsFlashSales) && cmsFlashSales.length > 0 && cmsFlashSales[0].ends_at) {
+        setFlashSaleEnd(new Date(cmsFlashSales[0].ends_at));
+      }
     } catch {}
   }, []);
 
@@ -291,7 +294,7 @@ export default function HomeScreen({ navigation }: any) {
             <View style={styles.flashHeader}>
               <View style={styles.flashTitleRow}>
                 <Text style={styles.flashTitle}>Flash Sale</Text>
-                <CountdownTimer endsAt={flashSaleEnd} />
+                {flashSaleEnd && <CountdownTimer endsAt={flashSaleEnd} />}
               </View>
               <TouchableOpacity onPress={() => goToList({ title: 'Flash Sales' })}>
                 <Text style={styles.seeAll}>See All</Text>
