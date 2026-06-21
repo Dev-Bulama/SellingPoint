@@ -52,15 +52,12 @@ function ProductGridItem({ product, onPress }: { product: Product; onPress: () =
 export default function ProductListScreen({ route, navigation }: any) {
   const { categoryId, brandId, title = 'Products', search } = route.params || {};
   const [products, setProducts] = useState<Product[]>([]);
-  const [page, setPage] = useState(1);
-  const [lastPage, setLastPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState(search || '');
   const [sort, setSort] = useState('latest');
   const [error, setError] = useState('');
 
-  // Use a ref to guard against concurrent fetches without isLoading in callback deps
   const loadingRef = useRef(false);
   const pageRef = useRef(1);
   const lastPageRef = useRef(1);
@@ -85,9 +82,7 @@ export default function ProductListScreen({ route, navigation }: any) {
       const newProducts: Product[] = res.data.data;
       const meta = res.data.meta;
       lastPageRef.current = meta.last_page;
-      setLastPage(meta.last_page);
       pageRef.current = reset ? 2 : currentPage + 1;
-      setPage(pageRef.current);
       setProducts(prev => reset ? newProducts : [...prev, ...newProducts]);
     } catch (e: any) {
       if (reset) {
@@ -125,35 +120,24 @@ export default function ProductListScreen({ route, navigation }: any) {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <View style={{ width: 40 }} />
+  const ListHeader = (
+    <View style={styles.listHeader}>
+      <View style={styles.searchBox}>
+        <IonIcon name="search" size={14} color={COLORS.textMuted} style={{ marginRight: 6 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search..."
+          value={searchText}
+          onChangeText={setSearchText}
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
+        />
       </View>
-
-      <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
-          <IonIcon name="search" size={14} color={COLORS.textMuted} style={{ marginRight: 6 }} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search..."
-            value={searchText}
-            onChangeText={setSearchText}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-          />
-        </View>
-      </View>
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.sortScrollView}
         contentContainerStyle={styles.sortRow}
+        keyboardShouldPersistTaps="handled"
       >
         {SORT_OPTIONS.map((opt) => (
           <TouchableOpacity
@@ -167,12 +151,25 @@ export default function ProductListScreen({ route, navigation }: any) {
           </TouchableOpacity>
         ))}
       </ScrollView>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{title}</Text>
+        <View style={{ width: 40 }} />
+      </View>
 
       <FlatList
         data={products}
         numColumns={2}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.grid}
+        ListHeaderComponent={ListHeader}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         renderItem={({ item }) => (
           <ProductGridItem product={item} onPress={() => navigation.navigate('ProductDetail', { slug: item.slug })} />
@@ -203,26 +200,28 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
-  searchRow: { backgroundColor: COLORS.white, paddingHorizontal: 16, paddingBottom: 12 },
+  listHeader: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
+    marginBottom: 4,
+  },
   searchBox: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: COLORS.grayLight, borderRadius: SIZES.borderRadius,
     paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border,
+    marginBottom: 12,
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: COLORS.text },
-  sortScrollView: { backgroundColor: COLORS.white, maxHeight: 52 },
-  sortRow: {
-    flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 12, paddingTop: 4, gap: 8,
-  },
+  sortRow: { flexDirection: 'row', paddingBottom: 12, gap: 8 },
   sortChip: {
-    paddingHorizontal: 12, paddingVertical: 6,
+    paddingHorizontal: 14, paddingVertical: 7,
     borderRadius: 20, backgroundColor: COLORS.grayLight,
     borderWidth: 1, borderColor: COLORS.border,
   },
   activeSortChip: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   sortText: { fontSize: 12, color: COLORS.text },
   activeSortText: { color: COLORS.white, fontWeight: '600' },
-  grid: { padding: 8, flexGrow: 1 },
+  grid: { paddingHorizontal: 8, paddingBottom: 8, flexGrow: 1 },
   gridItem: {
     flex: 1, margin: 6, backgroundColor: COLORS.white,
     borderRadius: SIZES.borderRadius,
@@ -251,7 +250,7 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center' },
   star: { fontSize: 11, color: COLORS.text },
   soldText: { fontSize: 11, color: COLORS.textMuted },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48, marginTop: 80 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48, marginTop: 40 },
   emptyText: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center' },
 });

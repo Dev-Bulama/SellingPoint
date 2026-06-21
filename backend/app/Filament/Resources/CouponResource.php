@@ -15,7 +15,8 @@ class CouponResource extends Resource {
 
     public static function form(Form $form): Form {
         return $form->schema([
-            Forms\Components\TextInput::make('code')->required()->uppercase()->unique(ignoreRecord: true),
+            Forms\Components\TextInput::make('code')->required()->unique(ignoreRecord: true)
+                ->dehydrateStateUsing(fn ($state) => strtoupper($state)),
             Forms\Components\Textarea::make('description')->rows(2),
             Forms\Components\Select::make('type')->options(['percentage' => 'Percentage', 'fixed' => 'Fixed Amount'])->required(),
             Forms\Components\TextInput::make('value')->numeric()->required(),

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
+  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
@@ -28,9 +28,10 @@ function Field({ label, value, onChangeText, ...props }: FieldProps) {
 }
 
 export default function RegisterScreen({ navigation }: any) {
-  const { register, isLoading } = useAuthStore();
+  const { register, isLoading, user } = useAuthStore();
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password_confirmation: '' });
   const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -40,7 +41,7 @@ export default function RegisterScreen({ navigation }: any) {
     setError('');
     try {
       await register(form);
-      navigation.getParent()?.goBack();
+      setShowSuccess(true);
     } catch (e) {
       setError(getErrorMessage(e));
     }
@@ -75,6 +76,40 @@ export default function RegisterScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* ── Registration Success Modal ── */}
+      <Modal visible={showSuccess} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.successIconWrap}>
+              <IonIcon name="checkmark-circle" size={48} color={COLORS.primary} />
+            </View>
+            <Text style={styles.modalTitle}>Welcome, {user?.name?.split(' ')[0]}!</Text>
+            <Text style={styles.modalMessage}>Your account has been created successfully. You're now logged in and ready to shop.</Text>
+            <TouchableOpacity
+              style={styles.shopBtn}
+              onPress={() => {
+                setShowSuccess(false);
+                navigation.getParent()?.goBack();
+              }}
+            >
+              <IonIcon name="storefront-outline" size={18} color={COLORS.white} style={{ marginRight: 8 }} />
+              <Text style={styles.shopBtnText}>Start Shopping</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.profileBtn}
+              onPress={() => {
+                setShowSuccess(false);
+                navigation.getParent()?.goBack();
+                setTimeout(() => navigation.navigate('AccountTab'), 300);
+              }}
+            >
+              <IonIcon name="person-outline" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
+              <Text style={styles.profileBtnText}>Explore Account</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -101,4 +136,30 @@ const styles = StyleSheet.create({
   loginRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 32 },
   loginLabel: { color: COLORS.textSecondary, fontSize: 14 },
   loginLink: { color: COLORS.primary, fontSize: 14, fontWeight: 'bold' },
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  modalCard: {
+    backgroundColor: COLORS.white, borderRadius: 24, padding: 32,
+    width: '100%', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 10,
+  },
+  successIconWrap: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: COLORS.primary + '15',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+  },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginBottom: 10 },
+  modalMessage: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 21, marginBottom: 28 },
+  shopBtn: {
+    backgroundColor: COLORS.primary, borderRadius: SIZES.borderRadius,
+    paddingVertical: 14, width: '100%', alignItems: 'center',
+    flexDirection: 'row', justifyContent: 'center', marginBottom: 12,
+  },
+  shopBtnText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
+  profileBtn: {
+    borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: SIZES.borderRadius,
+    paddingVertical: 13, width: '100%', alignItems: 'center',
+    flexDirection: 'row', justifyContent: 'center',
+  },
+  profileBtnText: { color: COLORS.primary, fontSize: 15, fontWeight: '600' },
 });
