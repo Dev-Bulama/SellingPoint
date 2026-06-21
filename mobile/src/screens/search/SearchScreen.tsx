@@ -199,7 +199,7 @@ export default function SearchScreen({ navigation }: any) {
           <TextInput
             ref={inputRef}
             style={styles.input}
-            placeholder="Search products..."
+            placeholder="Search products, brands, categories..."
             placeholderTextColor={COLORS.placeholder}
             value={query}
             onChangeText={handleQueryChange}
