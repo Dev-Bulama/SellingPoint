@@ -49,6 +49,9 @@ Route::prefix('v1')->group(function () {
         Route::get('pages/{slug}', [CmsController::class, 'page']);
     });
 
+    // Convenience alias for mobile app
+    Route::get('app/settings', [CmsController::class, 'settings']);
+
     // Paystack webhook (no auth — verified by signature)
     Route::post('payments/webhook', [PaymentController::class, 'webhook']);
 

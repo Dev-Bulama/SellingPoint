@@ -27,6 +27,8 @@ class Settings extends Page
             'cash_on_delivery_enabled', 'maintenance_mode',
             'min_app_version', 'force_update_message',
             'tax_percentage', 'about_app',
+            'active_environment', 'local_api_url', 'production_api_url',
+            'production_domain', 'force_production',
         ];
         foreach ($keys as $key) {
             $this->data[$key] = Setting::get($key, '');
@@ -65,6 +67,43 @@ class Settings extends Page
                 Forms\Components\Tabs\Tab::make('App Update')->schema([
                     Forms\Components\TextInput::make('min_app_version')->label('Minimum App Version'),
                     Forms\Components\Textarea::make('force_update_message')->rows(2)->label('Force Update Message'),
+                ])->columns(2),
+
+                Forms\Components\Tabs\Tab::make('Environment')->schema([
+                    Forms\Components\Select::make('active_environment')
+                        ->label('Active Environment')
+                        ->options(['local' => 'Local Development', 'production' => 'Production'])
+                        ->default('local')
+                        ->required()
+                        ->helperText('Controls which backend the mobile app connects to (only applies when Force Production is off).'),
+                    Forms\Components\Toggle::make('force_production')
+                        ->label('Force Mobile App to Use Production')
+                        ->helperText('When ON, the mobile app always uses Production regardless of build type.'),
+                    Forms\Components\TextInput::make('local_api_url')
+                        ->label('Local API URL')
+                        ->url()
+                        ->placeholder('http://10.0.2.2:8000/api/v1')
+                        ->helperText('Used during local development (Android emulator default: 10.0.2.2). For physical devices use your PC\'s LAN IP.'),
+                    Forms\Components\TextInput::make('production_api_url')
+                        ->label('Production API URL')
+                        ->url()
+                        ->placeholder('https://sellingpoint.ng/api/v1')
+                        ->helperText('The live backend API URL for release builds.'),
+                    Forms\Components\TextInput::make('production_domain')
+                        ->label('Production Domain')
+                        ->url()
+                        ->placeholder('https://sellingpoint.ng')
+                        ->helperText('Root domain (used for image URLs and deep links).'),
+                    Forms\Components\Placeholder::make('active_api_url_preview')
+                        ->label('Currently Active API URL')
+                        ->content(function () {
+                            $env   = Setting::get('active_environment', 'local');
+                            $force = (bool) Setting::get('force_production', false);
+                            $url   = ($force || $env === 'production')
+                                ? Setting::get('production_api_url', 'https://sellingpoint.ng/api/v1')
+                                : Setting::get('local_api_url', 'http://10.0.2.2:8000/api/v1');
+                            return $url;
+                        }),
                 ])->columns(2),
             ]),
         ])->statePath('data');

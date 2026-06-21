@@ -58,6 +58,22 @@ class CmsController extends Controller
         $settings['maintenance_mode']         = (bool) $settings['maintenance_mode'];
         $settings['cash_on_delivery_enabled'] = (bool) $settings['cash_on_delivery_enabled'];
 
+        // Environment switching
+        $activeEnv       = Setting::get('active_environment', 'local');
+        $forceProd       = (bool) Setting::get('force_production', false);
+        $localUrl        = Setting::get('local_api_url', 'http://10.0.2.2:8000/api/v1');
+        $productionUrl   = Setting::get('production_api_url', 'https://sellingpoint.ng/api/v1');
+        $productionDomain = Setting::get('production_domain', 'https://sellingpoint.ng');
+
+        $settings['environment'] = [
+            'active'           => $activeEnv,
+            'force_production' => $forceProd,
+            'local_api_url'    => $localUrl,
+            'production_api_url' => $productionUrl,
+            'production_domain'  => $productionDomain,
+            'active_api_url'   => ($forceProd || $activeEnv === 'production') ? $productionUrl : $localUrl,
+        ];
+
         return response()->json(['data' => $settings]);
     }
 
