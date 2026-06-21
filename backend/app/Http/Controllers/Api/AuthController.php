@@ -139,7 +139,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid OTP'], 422);
         }
 
-        if ($user->otp_expires_at->isPast()) {
+        if (!$user->otp_expires_at || $user->otp_expires_at->isPast()) {
             return response()->json(['message' => 'OTP has expired'], 422);
         }
 

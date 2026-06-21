@@ -32,7 +32,7 @@ class CouponResource extends Resource {
     public static function table(Table $table): Table {
         return $table->columns([
             Tables\Columns\TextColumn::make('code')->searchable()->copyable(),
-            Tables\Columns\BadgeColumn::make('type'),
+            Tables\Columns\TextColumn::make('type')->badge(),
             Tables\Columns\TextColumn::make('value'),
             Tables\Columns\TextColumn::make('usage_count')->label('Used'),
             Tables\Columns\TextColumn::make('usage_limit')->placeholder('Unlimited'),

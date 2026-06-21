@@ -20,7 +20,7 @@ class ProductController extends Controller
         $query = Product::query()
             ->active()
             ->with(['category', 'brand', 'images'])
-            ->withCount('reviews');
+            ->withCount(['reviews as reviews_count' => fn($q) => $q->where('status', 'approved')]);
 
         if ($request->category_id) {
             $query->where('category_id', $request->category_id);

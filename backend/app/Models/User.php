@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -9,7 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
 
@@ -35,8 +37,13 @@ class User extends Authenticatable
     public function wishlists() { return $this->hasMany(Wishlist::class); }
     public function reviews() { return $this->hasMany(Review::class); }
     public function pushTokens() { return $this->hasMany(PushToken::class); }
-    public function notifications() { return $this->hasMany(UserNotification::class); }
+    public function userNotifications() { return $this->hasMany(UserNotification::class); }
     public function recentlyViewed() { return $this->hasMany(RecentlyViewed::class); }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->is_active && $this->hasRole('admin');
+    }
 
     public function getAvatarUrlAttribute(): ?string
     {

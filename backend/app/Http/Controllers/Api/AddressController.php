@@ -29,6 +29,12 @@ class AddressController extends Controller
         return response()->json(['message' => 'Address added', 'data' => new AddressResource($address)], 201);
     }
 
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $address = $request->user()->addresses()->findOrFail($id);
+        return response()->json(['data' => new AddressResource($address)]);
+    }
+
     public function update(StoreAddressRequest $request, int $id): JsonResponse
     {
         $address = $request->user()->addresses()->findOrFail($id);

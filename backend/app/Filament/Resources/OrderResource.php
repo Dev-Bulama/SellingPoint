@@ -6,6 +6,8 @@ use App\Filament\Resources\OrderResource\Pages;
 use App\Models\Order;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,6 +18,8 @@ class OrderResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $navigationGroup = 'Sales';
     protected static ?int $navigationSort = 1;
+
+    public static function canCreate(): bool { return false; }
 
     public static function form(Form $form): Form
     {
@@ -56,15 +60,24 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('order_number')->searchable()->copyable(),
                 Tables\Columns\TextColumn::make('user.name')->label('Customer')->searchable(),
                 Tables\Columns\TextColumn::make('total')->money('NGN')->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'warning' => 'pending',
-                        'primary' => fn($state) => in_array($state, ['confirmed', 'shipped']),
-                        'success' => 'delivered',
-                        'danger'  => fn($state) => in_array($state, ['cancelled', 'refunded']),
-                    ]),
-                Tables\Columns\BadgeColumn::make('payment_status')
-                    ->colors(['success' => 'paid', 'danger' => 'failed', 'warning' => 'unpaid']),
+                Tables\Columns\TextColumn::make('status')->badge()
+                    ->color(fn(string $state): string => match($state) {
+                        'pending'    => 'warning',
+                        'confirmed'  => 'primary',
+                        'processing' => 'info',
+                        'shipped'    => 'info',
+                        'delivered'  => 'success',
+                        'cancelled'  => 'danger',
+                        'refunded'   => 'gray',
+                        default      => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('payment_status')->badge()
+                    ->color(fn(string $state): string => match($state) {
+                        'paid'     => 'success',
+                        'failed'   => 'danger',
+                        'refunded' => 'gray',
+                        default    => 'warning',
+                    }),
                 Tables\Columns\TextColumn::make('payment_method'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
             ])
@@ -75,14 +88,14 @@ class OrderResource extends Resource
                 Tables\Filters\SelectFilter::make('payment_status')
                     ->options(['unpaid' => 'Unpaid', 'paid' => 'Paid', 'failed' => 'Failed']),
             ])
-            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\ViewAction::make()]);
+            ->actions([Tables\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListOrders::route('/'),
-            'edit'   => Pages\EditOrder::route('/{record}/edit'),
+            'index' => Pages\ListOrders::route('/'),
+            'edit'  => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
 }

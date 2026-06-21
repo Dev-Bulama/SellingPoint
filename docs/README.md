@@ -13,6 +13,7 @@ Production-ready international e-commerce platform — Laravel API + Filament Ad
 | [Paystack Integration](paystack.md) | Payment flow, webhooks, testing |
 | [OneSignal Notifications](onesignal.md) | Push notification setup |
 | [Deployment](deployment.md) | Production server deployment guide |
+| [Troubleshooting](troubleshooting.md) | Common issues and fixes |
 
 ## Quick Start
 

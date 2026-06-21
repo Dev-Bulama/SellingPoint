@@ -95,8 +95,13 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('discount_price')->money('NGN')->placeholder('—'),
                 Tables\Columns\TextColumn::make('stock_quantity')->sortable()
                     ->color(fn($state) => $state <= 5 ? 'danger' : 'success'),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors(['success' => 'active', 'warning' => 'draft', 'danger' => 'inactive']),
+                Tables\Columns\TextColumn::make('status')->badge()
+                    ->color(fn(string $state): string => match($state) {
+                        'active'   => 'success',
+                        'draft'    => 'warning',
+                        'inactive' => 'danger',
+                        default    => 'gray',
+                    }),
                 Tables\Columns\IconColumn::make('is_featured')->boolean(),
                 Tables\Columns\TextColumn::make('sold_count')->sortable(),
                 Tables\Columns\TextColumn::make('created_at')->date()->sortable()->toggleable(isToggledHiddenByDefault: true),

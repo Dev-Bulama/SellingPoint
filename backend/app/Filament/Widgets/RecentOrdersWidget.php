@@ -21,17 +21,24 @@ class RecentOrdersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('order_number')->searchable(),
                 Tables\Columns\TextColumn::make('user.name')->label('Customer'),
                 Tables\Columns\TextColumn::make('total')->money('NGN'),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'warning'  => 'pending',
-                        'primary'  => 'confirmed',
-                        'info'     => 'processing',
-                        'primary'  => 'shipped',
-                        'success'  => 'delivered',
-                        'danger'   => 'cancelled',
-                    ]),
-                Tables\Columns\BadgeColumn::make('payment_status')
-                    ->colors(['success' => 'paid', 'danger' => 'failed', 'warning' => 'unpaid']),
+                Tables\Columns\TextColumn::make('status')->badge()
+                    ->color(fn(string $state): string => match($state) {
+                        'pending'    => 'warning',
+                        'confirmed'  => 'primary',
+                        'processing' => 'info',
+                        'shipped'    => 'info',
+                        'delivered'  => 'success',
+                        'cancelled'  => 'danger',
+                        'refunded'   => 'gray',
+                        default      => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('payment_status')->badge()
+                    ->color(fn(string $state): string => match($state) {
+                        'paid'     => 'success',
+                        'failed'   => 'danger',
+                        'refunded' => 'gray',
+                        default    => 'warning',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
             ]);
     }

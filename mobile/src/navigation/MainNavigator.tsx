@@ -1,8 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS, SIZES } from '../constants';
+import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../constants';
 import { useCartStore } from '../store/cartStore';
 import HomeScreen from '../screens/home/HomeScreen';
 import ProductListScreen from '../screens/product/ProductListScreen';
@@ -11,12 +11,13 @@ import CartScreen from '../screens/cart/CartScreen';
 import CheckoutScreen from '../screens/checkout/CheckoutScreen';
 import OrderSuccessScreen from '../screens/order/OrderSuccessScreen';
 import OrderDetailScreen from '../screens/order/OrderDetailScreen';
+import OrdersScreen from '../screens/order/OrdersScreen';
 import WishlistScreen from '../screens/wishlist/WishlistScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
 import AddressesScreen from '../screens/profile/AddressesScreen';
-import OrdersScreen from '../screens/order/OrdersScreen';
+import AddAddressScreen from '../screens/profile/AddAddressScreen';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import PageScreen from '../screens/profile/PageScreen';
 import FaqScreen from '../screens/profile/FaqScreen';
@@ -24,6 +25,7 @@ import FaqScreen from '../screens/profile/FaqScreen';
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const CartStack = createNativeStackNavigator();
+const WishlistStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 
 function HomeStackNav() {
@@ -48,6 +50,15 @@ function CartStackNav() {
   );
 }
 
+function WishlistStackNav() {
+  return (
+    <WishlistStack.Navigator screenOptions={{ headerShown: false }}>
+      <WishlistStack.Screen name="Wishlist" component={WishlistScreen} />
+      <WishlistStack.Screen name="ProductDetail" component={ProductDetailScreen} />
+    </WishlistStack.Navigator>
+  );
+}
+
 function ProfileStackNav() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
@@ -55,6 +66,7 @@ function ProfileStackNav() {
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
       <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       <ProfileStack.Screen name="Addresses" component={AddressesScreen} />
+      <ProfileStack.Screen name="AddAddress" component={AddAddressScreen} />
       <ProfileStack.Screen name="Orders" component={OrdersScreen} />
       <ProfileStack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <ProfileStack.Screen name="Page" component={PageScreen} />
@@ -65,7 +77,7 @@ function ProfileStackNav() {
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    Home: '🏠', Search: '🔍', Cart: '🛒', Wishlist: '❤️', Profile: '👤',
+    Home: '🏠', Cart: '🛒', Wishlist: '❤️', Profile: '👤',
   };
   return (
     <Text style={{ fontSize: focused ? 24 : 20, opacity: focused ? 1 : 0.6 }}>
@@ -107,7 +119,7 @@ export default function MainNavigator() {
       />
       <Tab.Screen
         name="WishlistTab"
-        component={WishlistScreen}
+        component={WishlistStackNav}
         options={{ tabBarLabel: 'Wishlist', tabBarIcon: ({ focused }) => <TabIcon name="Wishlist" focused={focused} /> }}
       />
       <Tab.Screen

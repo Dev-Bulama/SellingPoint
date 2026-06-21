@@ -45,7 +45,7 @@ class OrderController extends Controller
     public function checkout(CheckoutRequest $request): JsonResponse
     {
         $user    = $request->user();
-        $cart    = Cart::where('user_id', $user->id)->with('items.product')->firstOrFail();
+        $cart    = Cart::where('user_id', $user->id)->with(['items.product', 'items.variant'])->firstOrFail();
         $address = $user->addresses()->findOrFail($request->address_id);
 
         if ($cart->items->isEmpty()) {
@@ -72,7 +72,7 @@ class OrderController extends Controller
         $discount = 0;
         $coupon   = null;
         if ($request->coupon_code) {
-            $coupon = Coupon::where('code', $request->coupon_code)->first();
+            $coupon = Coupon::where('code', strtoupper($request->coupon_code))->first();
             if ($coupon && $coupon->isValid()) {
                 $discount = $coupon->calculateDiscount($subtotal);
             }
@@ -110,7 +110,8 @@ class OrderController extends Controller
                     'product_id'         => $item->product_id,
                     'product_variant_id' => $item->product_variant_id,
                     'product_name'       => $item->product->name,
-                    'product_image'      => $item->product->thumbnail,
+                    'product_image'      => $item->product->thumbnail_url,
+                    'variant_name'       => $item->variant ? "{$item->variant->name}: {$item->variant->value}" : null,
                     'quantity'           => $item->quantity,
                     'unit_price'         => $item->price,
                     'total_price'        => $item->price * $item->quantity,

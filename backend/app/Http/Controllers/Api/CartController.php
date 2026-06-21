@@ -46,17 +46,25 @@ class CartController extends Controller
         }
 
         $cart = $this->getCart($request);
-        $item = CartItem::updateOrCreate(
-            [
+        $existing = CartItem::where([
+            'cart_id'            => $cart->id,
+            'product_id'         => $request->product_id,
+            'product_variant_id' => $request->product_variant_id,
+        ])->first();
+
+        if ($existing) {
+            $existing->increment('quantity', $request->quantity);
+            $existing->update(['price' => $price]);
+            $item = $existing;
+        } else {
+            $item = CartItem::create([
                 'cart_id'            => $cart->id,
                 'product_id'         => $request->product_id,
                 'product_variant_id' => $request->product_variant_id,
-            ],
-            [
-                'quantity' => \DB::raw("quantity + {$request->quantity}"),
-                'price'    => $price,
-            ]
-        );
+                'quantity'           => $request->quantity,
+                'price'              => $price,
+            ]);
+        }
 
         $cart->load(['items.product.images', 'items.variant']);
         return response()->json(['message' => 'Added to cart', 'data' => new CartResource($cart)]);

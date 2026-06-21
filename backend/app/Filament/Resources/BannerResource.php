@@ -35,7 +35,7 @@ class BannerResource extends Resource {
         return $table->columns([
             Tables\Columns\ImageColumn::make('image')->width(120)->height(60),
             Tables\Columns\TextColumn::make('title')->searchable(),
-            Tables\Columns\BadgeColumn::make('type'),
+            Tables\Columns\TextColumn::make('type')->badge(),
             Tables\Columns\TextColumn::make('sort_order')->sortable(),
             Tables\Columns\IconColumn::make('is_active')->boolean(),
             Tables\Columns\TextColumn::make('ends_at')->dateTime()->placeholder('No expiry'),

@@ -15,7 +15,11 @@ class StatsOverviewWidget extends BaseWidget
         $totalRevenue = Order::where('payment_status', 'paid')->sum('total');
         $totalOrders  = Order::count();
         $pendingOrders = Order::where('status', 'pending')->count();
-        $totalCustomers = User::role('customer')->count();
+        try {
+            $totalCustomers = User::role('customer')->count();
+        } catch (\Exception $e) {
+            $totalCustomers = User::count();
+        }
         $lowStock = Product::where('stock_quantity', '<=', 5)->where('status', 'active')->count();
 
         return [
