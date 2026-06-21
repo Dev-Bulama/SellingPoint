@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Banner extends Model
 {
@@ -20,9 +21,9 @@ class Banner extends Model
         'ends_at' => 'datetime',
     ];
 
-    public function getImageUrlAttribute(): string
+    public function getImageUrlAttribute(): ?string
     {
-        return asset('storage/' . $this->image);
+        return $this->image ? Storage::disk('public')->url($this->image) : null;
     }
 
     public function scopeActive($query)

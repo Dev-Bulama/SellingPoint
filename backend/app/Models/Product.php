@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -42,7 +43,7 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): ?string
     {
-        return $this->thumbnail ? asset('storage/' . $this->thumbnail) : null;
+        return $this->thumbnail ? Storage::disk('public')->url($this->thumbnail) : null;
     }
 
     public function getEffectivePriceAttribute(): float
