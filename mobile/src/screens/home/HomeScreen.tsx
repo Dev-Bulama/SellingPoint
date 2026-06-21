@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  FlatList, RefreshControl, Dimensions, Image, Animated,
+  FlatList, RefreshControl, Dimensions, Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SIZES } from '../../constants';
@@ -10,10 +10,13 @@ import { cmsApi } from '../../api/cms';
 import { Product, Category, Banner } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { useCartStore } from '../../store/cartStore';
+import { useAuthStore } from '../../store/authStore';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
+const BANNER_WIDTH = width - 32;
 const RECENTLY_VIEWED_KEY = 'recently_viewed';
+const SLIDE_INTERVAL = 3500;
 
 // ---------------------------------------------------------------------------
 // CountdownTimer
@@ -56,15 +59,124 @@ const timerStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   label: { fontSize: 12, color: COLORS.textSecondary, marginRight: 6 },
   block: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    marginHorizontal: 1,
+    backgroundColor: COLORS.accent, borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 3, marginHorizontal: 1,
   },
   digit: { color: COLORS.white, fontSize: 13, fontWeight: 'bold', fontVariant: ['tabular-nums'] },
   colon: { color: COLORS.accent, fontWeight: 'bold', fontSize: 14, marginHorizontal: 1 },
 });
+
+// ---------------------------------------------------------------------------
+// BannerItem
+// ---------------------------------------------------------------------------
+function BannerItem({ banner }: { banner: Banner }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  if (!banner.image_url || imgFailed) {
+    return (
+      <View style={[styles.bannerBg, { backgroundColor: banner.bg_color || COLORS.primary }]}>
+        <Text style={styles.bannerTitle}>{banner.title}</Text>
+        {banner.subtitle && <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>}
+        {banner.button_text && (
+          <View style={styles.bannerBtn}><Text style={styles.bannerBtnText}>{banner.button_text}</Text></View>
+        )}
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri: banner.image_url }}
+      style={styles.bannerImage}
+      resizeMode="cover"
+      onError={() => setImgFailed(true)}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AutoBannerSlider
+// ---------------------------------------------------------------------------
+function AutoBannerSlider({ banners, onPress }: { banners: Banner[]; onPress: (b: Banner) => void }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const indexRef = useRef(0);
+
+  const slideTo = (idx: number) => {
+    const next = ((idx % banners.length) + banners.length) % banners.length;
+    indexRef.current = next;
+    setActiveIndex(next);
+    scrollRef.current?.scrollTo({ x: next * BANNER_WIDTH, animated: true });
+  };
+
+  const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      slideTo(indexRef.current + 1);
+    }, SLIDE_INTERVAL);
+  };
+
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    startTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [banners.length]);
+
+  const handleMomentumEnd = (e: any) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH);
+    indexRef.current = idx;
+    setActiveIndex(idx);
+    startTimer();
+  };
+
+  if (banners.length === 0) {
+    return (
+      <View style={styles.bannerWrapper}>
+        <View style={[styles.bannerItem, { backgroundColor: COLORS.primary }]}>
+          <View style={styles.bannerBg}>
+            <Text style={styles.bannerTitle}>Mega Sale — Up to 50% Off!</Text>
+            <Text style={styles.bannerSubtitle}>Shop top brands at unbeatable prices</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.bannerWrapper}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        scrollEventThrottle={16}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleMomentumEnd}
+        onScrollBeginDrag={() => { if (timerRef.current) clearInterval(timerRef.current); }}
+      >
+        {banners.map((banner) => (
+          <TouchableOpacity
+            key={banner.id}
+            activeOpacity={0.95}
+            style={styles.bannerItem}
+            onPress={() => onPress(banner)}
+          >
+            <BannerItem banner={banner} />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Dot indicators */}
+      {banners.length > 1 && (
+        <View style={styles.dotsRow}>
+          {banners.map((_, i) => (
+            <TouchableOpacity key={i} onPress={() => { slideTo(i); startTimer(); }}>
+              <View style={[styles.dot, i === activeIndex && styles.dotActive]} />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // ProductCard
@@ -74,11 +186,7 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
     <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.88}>
       <View style={styles.productImageBox}>
         {product.thumbnail_url ? (
-          <Image
-            source={{ uri: product.thumbnail_url }}
-            style={styles.productImage}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: product.thumbnail_url }} style={styles.productImage} resizeMode="cover" />
         ) : (
           <View style={styles.productImagePlaceholder}>
             <IonIcon name="bag-handle-outline" size={32} color={COLORS.border} />
@@ -109,30 +217,6 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
 }
 
 // ---------------------------------------------------------------------------
-// BannerItem — shows image with fallback to colored card on load error
-// ---------------------------------------------------------------------------
-function BannerItem({ banner }: { banner: Banner }) {
-  const [imgFailed, setImgFailed] = useState(false);
-  const showFallback = !banner.image_url || imgFailed;
-  return showFallback ? (
-    <View style={[styles.bannerBg, { backgroundColor: banner.bg_color || COLORS.primary }]}>
-      <Text style={styles.bannerTitle}>{banner.title}</Text>
-      {banner.subtitle && <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>}
-      {banner.button_text && (
-        <View style={styles.bannerBtn}><Text style={styles.bannerBtnText}>{banner.button_text}</Text></View>
-      )}
-    </View>
-  ) : (
-    <Image
-      source={{ uri: banner.image_url! }}
-      style={styles.bannerImage}
-      resizeMode="cover"
-      onError={() => setImgFailed(true)}
-    />
-  );
-}
-
-// ---------------------------------------------------------------------------
 // SectionHeader
 // ---------------------------------------------------------------------------
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
@@ -149,42 +233,45 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => vo
 }
 
 // ---------------------------------------------------------------------------
-// HomeScreen
+// Category icon map
 // ---------------------------------------------------------------------------
 const CATEGORY_ICONS: Record<string, string> = {
-  'Electronics':       'phone-portrait-outline',
-  'Fashion':           'shirt-outline',
-  'Home & Living':     'home-outline',
-  'Beauty & Health':   'flower-outline',
-  'Sports & Outdoors': 'football-outline',
-  'Groceries':         'cart-outline',
-  'Smartphones':       'phone-portrait-outline',
-  'Laptops':           'laptop-outline',
-  'Tablets':           'tablet-portrait-outline',
-  'Smart Watches':     'watch-outline',
-  'Headphones':        'headset-outline',
-  'Cameras':           'camera-outline',
-  'Shoes':             'footsteps-outline',
-  'Bags & Purses':     'bag-handle-outline',
-  'Accessories':       'glasses-outline',
-  'Furniture':         'bed-outline',
-  'Kitchen & Dining':  'restaurant-outline',
-  'Bedding':           'bed-outline',
-  'Decor':             'color-palette-outline',
-  'Lighting':          'bulb-outline',
-  'Skincare':          'sparkles-outline',
-  'Hair Care':         'cut-outline',
-  'Makeup':            'rose-outline',
-  'Fragrances':        'flower-outline',
-  'Fresh Produce':     'leaf-outline',
-  'Beverages':         'wine-outline',
-  'Snacks':            'fast-food-outline',
+  'Electronics':        'phone-portrait-outline',
+  'Fashion':            'shirt-outline',
+  'Home & Living':      'home-outline',
+  'Beauty & Health':    'flower-outline',
+  'Sports & Outdoors':  'football-outline',
+  'Groceries':          'cart-outline',
+  'Smartphones':        'phone-portrait-outline',
+  'Laptops':            'laptop-outline',
+  'Tablets':            'tablet-portrait-outline',
+  'Smart Watches':      'watch-outline',
+  'Headphones':         'headset-outline',
+  'Cameras':            'camera-outline',
+  'Shoes':              'footsteps-outline',
+  'Bags & Purses':      'bag-handle-outline',
+  'Accessories':        'glasses-outline',
+  'Furniture':          'bed-outline',
+  'Kitchen & Dining':   'restaurant-outline',
+  'Bedding':            'bed-outline',
+  'Decor':              'color-palette-outline',
+  'Lighting':           'bulb-outline',
+  'Skincare':           'sparkles-outline',
+  'Hair Care':          'cut-outline',
+  'Makeup':             'rose-outline',
+  'Fragrances':         'flower-outline',
+  'Fresh Produce':      'leaf-outline',
+  'Beverages':          'wine-outline',
+  'Snacks':             'fast-food-outline',
 };
 
 function getCategoryIcon(name: string): string {
   return CATEGORY_ICONS[name] ?? 'pricetag-outline';
 }
 
+// ---------------------------------------------------------------------------
+// HomeScreen
+// ---------------------------------------------------------------------------
 export default function HomeScreen({ navigation }: any) {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -195,6 +282,9 @@ export default function HomeScreen({ navigation }: any) {
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const { fetchCart } = useCartStore();
+  const { user } = useAuthStore();
+
+  const firstName = user?.name?.trim().split(' ')[0] ?? '';
 
   const loadRecentlyViewed = useCallback(async () => {
     try {
@@ -218,9 +308,9 @@ export default function HomeScreen({ navigation }: any) {
       setNewArrivals(newArrRes.data.data);
       setFlashSales(flashRes.data.data);
       setCategories(catsRes.data.data);
-      const cmsFlashSales = cmsFlashRes.data.data;
-      if (Array.isArray(cmsFlashSales) && cmsFlashSales.length > 0 && cmsFlashSales[0].ends_at) {
-        setFlashSaleEnd(new Date(cmsFlashSales[0].ends_at));
+      const cmsFlash = cmsFlashRes.data.data;
+      if (Array.isArray(cmsFlash) && cmsFlash.length > 0 && cmsFlash[0].ends_at) {
+        setFlashSaleEnd(new Date(cmsFlash[0].ends_at));
       }
     } catch {}
   }, []);
@@ -245,13 +335,12 @@ export default function HomeScreen({ navigation }: any) {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello</Text>
+          <Text style={styles.greeting}>
+            Hello{firstName ? `, ${firstName}` : ''} 👋
+          </Text>
           <Text style={styles.subGreeting}>What are you shopping for today?</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Notifications')}
-          style={styles.notifBtn}
-        >
+        <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.notifBtn}>
           <IonIcon name="notifications-outline" size={22} color={COLORS.text} />
         </TouchableOpacity>
       </View>
@@ -268,48 +357,17 @@ export default function HomeScreen({ navigation }: any) {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
-        {/* ── Banner Slider ── */}
-        {banners.length > 0 ? (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            style={styles.bannerSlider}
-          >
-            {banners.map((banner) => (
-              <TouchableOpacity
-                key={banner.id}
-                activeOpacity={0.95}
-                style={styles.bannerItem}
-                onPress={() => banner.link && goToList({ title: banner.title })}
-              >
-                <BannerItem banner={banner} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={[styles.bannerItem, { backgroundColor: COLORS.primary }]}>
-            <View style={styles.bannerBg}>
-              <Text style={styles.bannerTitle}>Mega Sale — Up to 50% Off!</Text>
-              <Text style={styles.bannerSubtitle}>Shop top brands at unbeatable prices</Text>
-              <TouchableOpacity style={styles.bannerBtn} onPress={() => goToList({ title: 'All Products' })}>
-                <Text style={styles.bannerBtnText}>Shop Now</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+        {/* ── Auto-sliding Banner ── */}
+        <AutoBannerSlider
+          banners={banners}
+          onPress={(b) => b.link && goToList({ title: b.title })}
+        />
 
         {/* ── Categories ── */}
         <SectionHeader title="Shop by Category" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryList}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryList}>
           {categories.slice(0, 10).map((cat) => (
             <TouchableOpacity
               key={cat.id}
@@ -333,7 +391,7 @@ export default function HomeScreen({ navigation }: any) {
           <View style={styles.flashSaleSection}>
             <View style={styles.flashHeader}>
               <View style={styles.flashTitleRow}>
-                <Text style={styles.flashTitle}>Flash Sale</Text>
+                <Text style={styles.flashTitle}>⚡ Flash Sale</Text>
                 {flashSaleEnd && <CountdownTimer endsAt={flashSaleEnd} />}
               </View>
               <TouchableOpacity onPress={() => goToList({ title: 'Flash Sales' })}>
@@ -341,14 +399,10 @@ export default function HomeScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
             <FlatList
-              data={flashSales.slice(0, 8)}
-              horizontal
-              showsHorizontalScrollIndicator={false}
+              data={flashSales.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <ProductCard product={item} onPress={() => goToProduct(item.slug)} />
-              )}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
             />
           </View>
         )}
@@ -356,19 +410,12 @@ export default function HomeScreen({ navigation }: any) {
         {/* ── Featured Products ── */}
         {featured.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader
-              title="Featured Products"
-              onSeeAll={() => goToList({ title: 'Featured Products' })}
-            />
+            <SectionHeader title="Featured Products" onSeeAll={() => goToList({ title: 'Featured Products' })} />
             <FlatList
-              data={featured.slice(0, 8)}
-              horizontal
-              showsHorizontalScrollIndicator={false}
+              data={featured.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <ProductCard product={item} onPress={() => goToProduct(item.slug)} />
-              )}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
             />
           </View>
         )}
@@ -376,19 +423,12 @@ export default function HomeScreen({ navigation }: any) {
         {/* ── New Arrivals ── */}
         {newArrivals.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader
-              title="New Arrivals"
-              onSeeAll={() => goToList({ title: 'New Arrivals' })}
-            />
+            <SectionHeader title="New Arrivals" onSeeAll={() => goToList({ title: 'New Arrivals' })} />
             <FlatList
-              data={newArrivals.slice(0, 8)}
-              horizontal
-              showsHorizontalScrollIndicator={false}
+              data={newArrivals.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <ProductCard product={item} onPress={() => goToProduct(item.slug)} />
-              )}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
             />
           </View>
         )}
@@ -398,14 +438,10 @@ export default function HomeScreen({ navigation }: any) {
           <View style={styles.section}>
             <SectionHeader title="Recently Viewed" />
             <FlatList
-              data={recentlyViewed}
-              horizontal
-              showsHorizontalScrollIndicator={false}
+              data={recentlyViewed} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <ProductCard product={item} onPress={() => goToProduct(item.slug)} />
-              )}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
             />
           </View>
         )}
@@ -419,7 +455,6 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
-  // Header
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 12,
@@ -428,27 +463,24 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   subGreeting: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
   notifBtn: { padding: 8 },
-  notifIcon: { fontSize: 22 },
 
-  // Search
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: COLORS.grayLight, borderRadius: SIZES.borderRadius,
     marginHorizontal: SIZES.screenPadding, marginVertical: 12, padding: 12,
     borderWidth: 1, borderColor: COLORS.border,
   },
-  searchIcon: { fontSize: 16, marginRight: 8 },
   searchPlaceholder: { color: COLORS.textMuted, fontSize: 14 },
 
   // Banner
-  bannerSlider: { marginBottom: 8 },
+  bannerWrapper: { marginBottom: 4 },
   bannerItem: {
-    width: width - 32, marginHorizontal: 16, borderRadius: SIZES.borderRadiusLg,
-    overflow: 'hidden', minHeight: 160, marginBottom: 8,
+    width: BANNER_WIDTH, marginHorizontal: 16,
+    borderRadius: SIZES.borderRadiusLg, overflow: 'hidden', height: 160,
   },
   bannerImage: { width: '100%', height: 160 },
   bannerBg: {
-    flex: 1, minHeight: 160, padding: 24, justifyContent: 'center',
+    flex: 1, height: 160, padding: 24, justifyContent: 'center',
     backgroundColor: COLORS.primary,
   },
   bannerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.white, marginBottom: 6 },
@@ -458,6 +490,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20,
   },
   bannerBtnText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 13 },
+  dotsRow: {
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    marginTop: 10, marginBottom: 4,
+  },
+  dot: {
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: COLORS.border, marginHorizontal: 3,
+  },
+  dotActive: {
+    width: 18, height: 6, borderRadius: 3,
+    backgroundColor: COLORS.primary,
+  },
 
   // Section
   section: { marginBottom: 4 },
@@ -477,7 +521,6 @@ const styles = StyleSheet.create({
     marginBottom: 6, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden',
   },
   categoryImage: { width: 56, height: 56, borderRadius: 28 },
-  categoryEmoji: { fontSize: 24 },
   categoryName: { fontSize: 11, color: COLORS.text, textAlign: 'center', lineHeight: 14 },
 
   // Flash Sale
@@ -502,7 +545,6 @@ const styles = StyleSheet.create({
   },
   productImage: { width: '100%', height: '100%' },
   productImagePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  placeholderEmoji: { fontSize: 48 },
   discountBadge: {
     position: 'absolute', top: 8, left: 8,
     backgroundColor: COLORS.accent, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2,
@@ -514,7 +556,6 @@ const styles = StyleSheet.create({
   productPrice: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary, marginRight: 6 },
   originalPrice: { fontSize: 11, color: COLORS.textMuted, textDecorationLine: 'line-through' },
   ratingRow: { flexDirection: 'row', alignItems: 'center' },
-  star: { fontSize: 11 },
   ratingText: { fontSize: 11, color: COLORS.text, marginLeft: 2 },
   soldText: { fontSize: 11, color: COLORS.textMuted },
 });

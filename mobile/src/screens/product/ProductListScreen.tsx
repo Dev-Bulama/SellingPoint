@@ -120,42 +120,9 @@ export default function ProductListScreen({ route, navigation }: any) {
     }
   };
 
-  const ListHeader = (
-    <View style={styles.listHeader}>
-      <View style={styles.searchBox}>
-        <IonIcon name="search" size={14} color={COLORS.textMuted} style={{ marginRight: 6 }} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search..."
-          value={searchText}
-          onChangeText={setSearchText}
-          onSubmitEditing={handleSearch}
-          returnKeyType="search"
-        />
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.sortRow}
-        keyboardShouldPersistTaps="handled"
-      >
-        {SORT_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.value}
-            style={[styles.sortChip, sort === opt.value && styles.activeSortChip]}
-            onPress={() => setSort(opt.value)}
-          >
-            <Text style={[styles.sortText, sort === opt.value && styles.activeSortText]}>
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
+      {/* Fixed header — never scrolls away */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <IonIcon name="arrow-back" size={22} color={COLORS.text} />
@@ -164,12 +131,54 @@ export default function ProductListScreen({ route, navigation }: any) {
         <View style={{ width: 40 }} />
       </View>
 
+      {/* Fixed search bar */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBox}>
+          <IonIcon name="search" size={14} color={COLORS.textMuted} style={{ marginRight: 6 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search..."
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => { setSearchText(''); handleSearch(); }}>
+              <IonIcon name="close-circle" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Fixed sort chips — always visible */}
+      <View style={styles.sortBar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sortRow}
+          keyboardShouldPersistTaps="handled"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.value}
+              style={[styles.sortChip, sort === opt.value && styles.activeSortChip]}
+              onPress={() => setSort(opt.value)}
+            >
+              <Text style={[styles.sortText, sort === opt.value && styles.activeSortText]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Scrollable product grid */}
       <FlatList
         data={products}
         numColumns={2}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.grid}
-        ListHeaderComponent={ListHeader}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         renderItem={({ item }) => (
           <ProductGridItem product={item} onPress={() => navigation.navigate('ProductDetail', { slug: item.slug })} />
@@ -200,19 +209,21 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
-  listHeader: {
+  searchRow: {
     backgroundColor: COLORS.white,
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
-    marginBottom: 4,
+    paddingHorizontal: 16, paddingBottom: 10,
   },
   searchBox: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: COLORS.grayLight, borderRadius: SIZES.borderRadius,
     paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border,
-    marginBottom: 12,
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: COLORS.text },
-  sortRow: { flexDirection: 'row', paddingBottom: 12, gap: 8 },
+  sortBar: {
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  sortRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   sortChip: {
     paddingHorizontal: 14, paddingVertical: 7,
     borderRadius: 20, backgroundColor: COLORS.grayLight,
@@ -221,7 +232,7 @@ const styles = StyleSheet.create({
   activeSortChip: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   sortText: { fontSize: 12, color: COLORS.text },
   activeSortText: { color: COLORS.white, fontWeight: '600' },
-  grid: { paddingHorizontal: 8, paddingBottom: 8, flexGrow: 1 },
+  grid: { padding: 8, flexGrow: 1 },
   gridItem: {
     flex: 1, margin: 6, backgroundColor: COLORS.white,
     borderRadius: SIZES.borderRadius,

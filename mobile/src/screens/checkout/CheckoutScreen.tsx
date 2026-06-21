@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput,
+  ActivityIndicator, Alert, TextInput, Modal,
 } from 'react-native';
+import Paystack from 'react-native-paystack-webview';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
 import { paymentsApi } from '../../api/payments';
+import { cmsApi } from '../../api/cms';
 import { Address } from '../../types';
 import { COLORS, SIZES } from '../../constants';
 import { formatCurrency, getErrorMessage } from '../../utils/currency';
 import { useCartStore } from '../../store/cartStore';
+import { useAuthStore } from '../../store/authStore';
 import apiClient from '../../api/client';
 
 export default function CheckoutScreen({ navigation }: any) {
@@ -22,11 +25,18 @@ export default function CheckoutScreen({ navigation }: any) {
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [orderNotes, setOrderNotes] = useState('');
+  const [showPaystack, setShowPaystack] = useState(false);
+  const [paystackRef, setPaystackRef] = useState('');
+  const [paystackKey, setPaystackKey] = useState('');
+  const [pendingOrderNumber, setPendingOrderNumber] = useState('');
+
   const { cart, fetchCart } = useCartStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchCart();
     loadAddresses();
+    loadPaystackKey();
   }, []);
 
   const loadAddresses = async () => {
@@ -37,6 +47,14 @@ export default function CheckoutScreen({ navigation }: any) {
       const def = addrs.find(a => a.is_default) || addrs[0];
       if (def) setSelectedAddress(def);
     } catch {} finally { setLoadingAddresses(false); }
+  };
+
+  const loadPaystackKey = async () => {
+    try {
+      const res = await cmsApi.settings();
+      const key = res.data.data?.paystack_public_key;
+      if (key) setPaystackKey(key);
+    } catch {}
   };
 
   const handleValidateCoupon = async () => {
@@ -66,26 +84,37 @@ export default function CheckoutScreen({ navigation }: any) {
       const order = res.data.data;
 
       if (paymentMethod === 'paystack') {
+        if (!paystackKey) {
+          Alert.alert('Error', 'Payment is not configured. Please contact support.');
+          setIsLoading(false);
+          return;
+        }
         const payRes = await paymentsApi.initialize(order.order_number);
-        Alert.alert(
-          'Payment',
-          `Reference: ${payRes.data.reference}\n\nIn a real app, the Paystack SDK opens here. For testing, tap Verify to complete payment.`,
-          [
-            {
-              text: 'Verify Payment',
-              onPress: async () => {
-                const verifyRes = await paymentsApi.verify(payRes.data.reference);
-                navigation.replace('OrderSuccess', { orderNumber: order.order_number });
-              },
-            },
-          ]
-        );
+        setPendingOrderNumber(order.order_number);
+        setPaystackRef(payRes.data.reference);
+        setShowPaystack(true);
       } else {
         navigation.replace('OrderSuccess', { orderNumber: order.order_number });
       }
     } catch (e) {
       Alert.alert('Error', getErrorMessage(e));
     } finally { setIsLoading(false); }
+  };
+
+  const handlePaystackSuccess = async (data: any) => {
+    setShowPaystack(false);
+    setIsLoading(true);
+    try {
+      await paymentsApi.verify(paystackRef);
+      navigation.replace('OrderSuccess', { orderNumber: pendingOrderNumber });
+    } catch (e) {
+      Alert.alert('Verification Error', 'Payment made but could not verify. Please contact support with reference: ' + paystackRef);
+    } finally { setIsLoading(false); }
+  };
+
+  const handlePaystackCancel = () => {
+    setShowPaystack(false);
+    Alert.alert('Payment Cancelled', 'Your order was created but payment was not completed. You can retry from your Orders page.');
   };
 
   const subtotal = cart?.total ?? 0;
@@ -147,7 +176,7 @@ export default function CheckoutScreen({ navigation }: any) {
                 {paymentMethod === method && <View style={styles.radioInner} />}
               </View>
               <Text style={styles.paymentLabel}>
-                {method === 'paystack' ? 'Pay with Paystack (Card/Transfer/USSD)' : 'Cash on Delivery'}
+                {method === 'paystack' ? '💳  Pay with Paystack (Card / Transfer / USSD)' : '💵  Cash on Delivery'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -229,6 +258,31 @@ export default function CheckoutScreen({ navigation }: any) {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Paystack WebView payment sheet */}
+      {showPaystack && paystackKey && (
+        <Modal visible animationType="slide" onRequestClose={handlePaystackCancel}>
+          <View style={styles.paystackContainer}>
+            <View style={styles.paystackHeader}>
+              <TouchableOpacity onPress={handlePaystackCancel} style={styles.paystackClose}>
+                <IonIcon name="close" size={22} color={COLORS.text} />
+              </TouchableOpacity>
+              <Text style={styles.paystackTitle}>Secure Payment</Text>
+              <View style={{ width: 40 }} />
+            </View>
+            <Paystack
+              paystackKey={paystackKey}
+              amount={total}
+              billingEmail={user?.email ?? ''}
+              billingName={user?.name ?? ''}
+              activityIndicatorColor={COLORS.primary}
+              onCancel={handlePaystackCancel}
+              onSuccess={handlePaystackSuccess}
+              autoStart
+            />
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -266,4 +320,12 @@ const styles = StyleSheet.create({
   footer: { backgroundColor: COLORS.white, padding: SIZES.screenPadding, paddingBottom: 32, borderTopWidth: 1, borderTopColor: COLORS.border },
   placeOrderBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.borderRadius, paddingVertical: 16, alignItems: 'center' },
   placeOrderText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
+  paystackContainer: { flex: 1, backgroundColor: COLORS.white },
+  paystackHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 12,
+    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  paystackClose: { padding: 4 },
+  paystackTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
 });
