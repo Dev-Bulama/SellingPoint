@@ -10,14 +10,15 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\CmsController;
+use App\Http\Controllers\Api\SupportController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public Routes ───────────────────────────────────────────────────────────
 
 Route::prefix('v1')->group(function () {
 
-    // Auth
-    Route::prefix('auth')->group(function () {
+    // Auth (rate-limited)
+    Route::prefix('auth')->middleware('throttle:auth')->group(function () {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('login',    [AuthController::class, 'login']);
         Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
@@ -110,5 +111,9 @@ Route::prefix('v1')->group(function () {
 
         // Recently viewed
         Route::get('recently-viewed', [ProductController::class, 'recentlyViewed']);
+
+        // Support
+        Route::post('support/issues', [SupportController::class, 'submitIssue']);
+        Route::get('support/issues',  [SupportController::class, 'myIssues']);
     });
 });

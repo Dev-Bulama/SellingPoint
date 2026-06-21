@@ -347,6 +347,11 @@ export default function ProductDetailScreen({ route, navigation }: any) {
               {stockLabel}
             </Text>
           </View>
+          {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+            <Text style={{ color: '#FF8C00', fontSize: 13, fontWeight: '600', marginTop: 6 }}>
+              Only {product.stock_quantity} left in stock!
+            </Text>
+          )}
 
           {/* Variants */}
           {product.variants && product.variants.length > 0 && (

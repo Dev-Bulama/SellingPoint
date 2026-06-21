@@ -27,6 +27,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const userStr = await AsyncStorage.getItem('user');
       if (token && userStr) {
         set({ token, user: JSON.parse(userStr), isAuthenticated: true });
+        // Refresh user data from server (silently fail if offline or token expired)
+        try {
+          const res = await authApi.getProfile();
+          const freshUser = res.data.user;
+          await AsyncStorage.setItem('user', JSON.stringify(freshUser));
+          set({ user: freshUser });
+        } catch {}
       }
     } catch {}
   },
