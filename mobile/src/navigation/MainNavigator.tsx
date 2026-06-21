@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, StyleSheet } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../constants';
 import { useCartStore } from '../store/cartStore';
 import HomeScreen from '../screens/home/HomeScreen';
@@ -82,13 +83,21 @@ function ProfileStackNav() {
 }
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Home: '🏠', Cart: '🛒', Wishlist: '❤️', Profile: '👤',
+  const iconMap: Record<string, string> = {
+    Home: 'home',
+    Cart: 'cart-outline',
+    Wishlist: 'heart',
+    Profile: 'person-outline',
   };
+  const size = focused ? 24 : 20;
+  const opacity = focused ? 1 : 0.6;
   return (
-    <Text style={{ fontSize: focused ? 24 : 20, opacity: focused ? 1 : 0.6 }}>
-      {icons[name]}
-    </Text>
+    <IonIcon
+      name={iconMap[name]}
+      size={size}
+      color={focused ? COLORS.primary : COLORS.gray}
+      style={{ opacity }}
+    />
   );
 }
 

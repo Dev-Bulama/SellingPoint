@@ -1,13 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
 
 const { width } = Dimensions.get('window');
 
 const slides = [
-  { id: '1', emoji: '🛍️', title: 'Shop Millions of Products', subtitle: 'Browse electronics, fashion, home & more from top brands' },
-  { id: '2', emoji: '🚚', title: 'Fast & Reliable Delivery', subtitle: 'Get your orders delivered to your doorstep nationwide' },
-  { id: '3', emoji: '🔒', title: 'Safe & Secure Payments', subtitle: 'Pay with cards, bank transfer or cash on delivery' },
+  { id: '1', iconName: 'bag-handle-outline', title: 'Shop Millions of Products', subtitle: 'Browse electronics, fashion, home & more from top brands' },
+  { id: '2', iconName: 'car-outline', title: 'Fast & Reliable Delivery', subtitle: 'Get your orders delivered to your doorstep nationwide' },
+  { id: '3', iconName: 'lock-closed-outline', title: 'Safe & Secure Payments', subtitle: 'Pay with cards, bank transfer or cash on delivery' },
 ];
 
 export default function OnboardingScreen({ navigation }: any) {
@@ -36,7 +37,7 @@ export default function OnboardingScreen({ navigation }: any) {
         }}
         renderItem={({ item }) => (
           <View style={styles.slide}>
-            <Text style={styles.emoji}>{item.emoji}</Text>
+            <IonIcon name={item.iconName} size={100} color={COLORS.primary} style={{ marginBottom: 32 }} />
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.subtitle}>{item.subtitle}</Text>
           </View>

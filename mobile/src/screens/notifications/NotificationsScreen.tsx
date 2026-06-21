@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { Notification } from '../../types';
 import { COLORS, SIZES } from '../../constants';
@@ -32,7 +33,7 @@ export default function NotificationsScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>←</Text>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications {unreadCount > 0 && `(${unreadCount})`}</Text>
         {unreadCount > 0 && (
@@ -48,7 +49,11 @@ export default function NotificationsScreen({ navigation }: any) {
         renderItem={({ item }) => (
           <View style={[styles.notifItem, !item.is_read && styles.unread]}>
             <View style={styles.notifIcon}>
-              <Text style={{ fontSize: 24 }}>{item.type === 'order' ? '📦' : item.type === 'promo' ? '🏷️' : '🔔'}</Text>
+              <IonIcon
+                name={item.type === 'order' ? 'cube-outline' : item.type === 'promo' ? 'pricetag-outline' : 'notifications-outline'}
+                size={24}
+                color={COLORS.primary}
+              />
             </View>
             <View style={styles.notifContent}>
               <Text style={styles.notifTitle}>{item.title}</Text>
@@ -60,7 +65,7 @@ export default function NotificationsScreen({ navigation }: any) {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🔔</Text>
+            <IonIcon name="notifications-outline" size={64} color={COLORS.border} style={{ marginBottom: 16 }} />
             <Text style={styles.emptyTitle}>No notifications yet</Text>
           </View>
         }

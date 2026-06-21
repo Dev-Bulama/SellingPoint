@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS, SIZES } from '../../constants';
 
-const MenuItem = ({ icon, label, onPress, color = COLORS.text }: any) => (
+const MenuItem = ({ iconName, label, onPress, color = COLORS.text }: any) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-    <Text style={styles.menuIcon}>{icon}</Text>
+    <IonIcon name={iconName} size={20} color={color} style={styles.menuIcon} />
     <Text style={[styles.menuLabel, { color }]}>{label}</Text>
-    <Text style={styles.menuArrow}>›</Text>
+    <IonIcon name="chevron-forward" size={18} color={COLORS.textMuted} />
   </TouchableOpacity>
 );
 
@@ -35,32 +36,32 @@ export default function ProfileScreen({ navigation }: any) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <View style={styles.menuGroup}>
-          <MenuItem icon="✏️" label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
-          <MenuItem icon="🔒" label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
-          <MenuItem icon="📍" label="Manage Addresses" onPress={() => navigation.navigate('Addresses')} />
+          <MenuItem iconName="create-outline" label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
+          <MenuItem iconName="lock-closed-outline" label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
+          <MenuItem iconName="location-outline" label="Manage Addresses" onPress={() => navigation.navigate('Addresses')} />
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Orders</Text>
         <View style={styles.menuGroup}>
-          <MenuItem icon="📦" label="My Orders" onPress={() => navigation.navigate('Orders')} />
+          <MenuItem iconName="cube-outline" label="My Orders" onPress={() => navigation.navigate('Orders')} />
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
         <View style={styles.menuGroup}>
-          <MenuItem icon="❓" label="FAQ" onPress={() => navigation.navigate('FAQ')} />
-          <MenuItem icon="📋" label="Terms & Conditions" onPress={() => navigation.navigate('Page', { slug: 'terms-and-conditions', title: 'Terms & Conditions' })} />
-          <MenuItem icon="🔐" label="Privacy Policy" onPress={() => navigation.navigate('Page', { slug: 'privacy-policy', title: 'Privacy Policy' })} />
-          <MenuItem icon="ℹ️" label="About Us" onPress={() => navigation.navigate('Page', { slug: 'about-us', title: 'About Us' })} />
+          <MenuItem iconName="help-circle-outline" label="FAQ" onPress={() => navigation.navigate('FAQ')} />
+          <MenuItem iconName="document-text-outline" label="Terms & Conditions" onPress={() => navigation.navigate('Page', { slug: 'terms-and-conditions', title: 'Terms & Conditions' })} />
+          <MenuItem iconName="shield-checkmark-outline" label="Privacy Policy" onPress={() => navigation.navigate('Page', { slug: 'privacy-policy', title: 'Privacy Policy' })} />
+          <MenuItem iconName="information-circle-outline" label="About Us" onPress={() => navigation.navigate('Page', { slug: 'about-us', title: 'About Us' })} />
         </View>
       </View>
 
       <View style={styles.section}>
         <View style={styles.menuGroup}>
-          <MenuItem icon="🚪" label="Logout" onPress={handleLogout} color={COLORS.danger} />
+          <MenuItem iconName="log-out-outline" label="Logout" onPress={handleLogout} color={COLORS.danger} />
         </View>
       </View>
 
@@ -89,8 +90,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 12, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
   menuGroup: { backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius, overflow: 'hidden', elevation: 1 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
-  menuIcon: { fontSize: 20, marginRight: 14 },
+  menuIcon: { marginRight: 14 },
   menuLabel: { flex: 1, fontSize: 15 },
-  menuArrow: { fontSize: 20, color: COLORS.textMuted },
   version: { textAlign: 'center', color: COLORS.textMuted, fontSize: 12, marginTop: 24 },
 });

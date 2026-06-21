@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
 import { Order } from '../../types';
 import { COLORS, SIZES, ORDER_STATUSES } from '../../constants';
@@ -25,7 +26,7 @@ export default function OrdersScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Orders</Text>
         <View style={{ width: 40 }} />
@@ -52,14 +53,14 @@ export default function OrdersScreen({ navigation }: any) {
               <Text style={styles.orderItems}>{item.items?.length ?? 0} item(s)</Text>
               <View style={styles.orderFooter}>
                 <Text style={styles.orderTotal}>{formatCurrency(item.total)}</Text>
-                <Text style={styles.viewDetails}>View Details →</Text>
+                <Text style={styles.viewDetails}>View Details</Text>
               </View>
             </TouchableOpacity>
           );
         }}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>📦</Text>
+            <IonIcon name="cube-outline" size={64} color={COLORS.textMuted} style={styles.emptyIcon} />
             <Text style={styles.emptyTitle}>No orders yet</Text>
             <Text style={styles.emptySub}>Start shopping to see your orders here</Text>
           </View>
@@ -78,7 +79,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   backBtn: { padding: 4 },
-  backText: { fontSize: 22, color: COLORS.text },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   orderCard: {
     backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   orderTotal: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary },
   viewDetails: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
-  emptyEmoji: { fontSize: 64, marginBottom: 16 },
+  emptyIcon: { marginBottom: 16 },
   emptyTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
   emptySub: { fontSize: 14, color: COLORS.textSecondary },
 });

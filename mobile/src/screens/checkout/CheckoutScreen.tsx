@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   ActivityIndicator, Alert, TextInput,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
 import { paymentsApi } from '../../api/payments';
 import { Address } from '../../types';
@@ -93,8 +94,9 @@ export default function CheckoutScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <IonIcon name="arrow-back" size={20} color={COLORS.primary} />
+          <Text style={styles.backText}> Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Checkout</Text>
         <View style={{ width: 60 }} />
@@ -103,7 +105,7 @@ export default function CheckoutScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Delivery Address */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📍 Delivery Address</Text>
+          <Text style={styles.sectionTitle}>Delivery Address</Text>
           {addresses.length === 0 ? (
             <TouchableOpacity style={styles.addAddrBtn} onPress={() => navigation.navigate('ProfileTab', { screen: 'Addresses' })}>
               <Text style={styles.addAddrBtnText}>+ Add Delivery Address</Text>
@@ -129,7 +131,10 @@ export default function CheckoutScreen({ navigation }: any) {
 
         {/* Payment Method */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💳 Payment Method</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <IonIcon name="card-outline" size={18} color={COLORS.text} style={{ marginRight: 6 }} />
+            <Text style={styles.sectionTitle}>Payment Method</Text>
+          </View>
           {(['paystack', 'cash_on_delivery'] as const).map(method => (
             <TouchableOpacity
               key={method}
@@ -140,7 +145,7 @@ export default function CheckoutScreen({ navigation }: any) {
                 {paymentMethod === method && <View style={styles.radioInner} />}
               </View>
               <Text style={styles.paymentLabel}>
-                {method === 'paystack' ? '💳 Pay with Paystack (Card/Transfer/USSD)' : '💵 Cash on Delivery'}
+                {method === 'paystack' ? 'Pay with Paystack (Card/Transfer/USSD)' : 'Cash on Delivery'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -148,7 +153,10 @@ export default function CheckoutScreen({ navigation }: any) {
 
         {/* Coupon */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏷️ Coupon Code</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <IonIcon name="pricetag-outline" size={18} color={COLORS.text} style={{ marginRight: 6 }} />
+            <Text style={styles.sectionTitle}>Coupon Code</Text>
+          </View>
           <View style={styles.couponRow}>
             <TextInput
               style={styles.couponInput}
@@ -165,7 +173,10 @@ export default function CheckoutScreen({ navigation }: any) {
 
         {/* Order Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Order Summary</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <IonIcon name="receipt-outline" size={18} color={COLORS.text} style={{ marginRight: 6 }} />
+            <Text style={styles.sectionTitle}>Order Summary</Text>
+          </View>
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Subtotal ({cart?.items_count ?? 0} items)</Text>

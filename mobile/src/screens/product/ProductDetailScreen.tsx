@@ -12,6 +12,7 @@ import { Product, ProductVariant, Review, ProductImage } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
 const IMAGE_HEIGHT = 320;
@@ -37,11 +38,18 @@ async function addToRecentlyViewed(product: Product) {
 function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
     <View style={{ flexDirection: 'row' }}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Text key={i} style={{ fontSize: size, color: i <= Math.round(rating) ? '#F39C12' : COLORS.grayMedium }}>
-          ★
-        </Text>
-      ))}
+      {[1, 2, 3, 4, 5].map((i) => {
+        const diff = rating - (i - 1);
+        const iconName = diff >= 1 ? 'star' : diff >= 0.5 ? 'star-half' : 'star-outline';
+        return (
+          <IonIcon
+            key={i}
+            name={iconName}
+            size={size}
+            color={diff > 0 ? '#F39C12' : COLORS.grayMedium}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -65,7 +73,10 @@ function ReviewCard({ review }: { review: Review }) {
       {review.title ? <Text style={reviewStyles.title}>{review.title}</Text> : null}
       {review.body ? <Text style={reviewStyles.body}>{review.body}</Text> : null}
       {review.is_verified_purchase && (
-        <Text style={reviewStyles.verified}>✓ Verified Purchase</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+          <IonIcon name="checkmark-circle" size={14} color={COLORS.success} style={{ marginRight: 4 }} />
+          <Text style={reviewStyles.verified}>Verified Purchase</Text>
+        </View>
       )}
     </View>
   );
@@ -239,14 +250,14 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       {/* ── Floating header ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Text style={styles.headerBtnText}>←</Text>
+          <IonIcon name="arrow-back" size={20} color={COLORS.text} />
         </TouchableOpacity>
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={handleShare} style={styles.headerBtn}>
-            <Text style={{ fontSize: 18 }}>↗</Text>
+            <IonIcon name="share-outline" size={20} color={COLORS.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleWishlistToggle} style={styles.headerBtn}>
-            <Text style={{ fontSize: 22 }}>{inWishlist ? '❤️' : '🤍'}</Text>
+            <IonIcon name={inWishlist ? 'heart' : 'heart-outline'} size={22} color={inWishlist ? COLORS.danger : COLORS.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -273,7 +284,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             </ScrollView>
           ) : (
             <View style={styles.imagePlaceholder}>
-              <Text style={styles.imageEmoji}>🛍️</Text>
+              <IonIcon name="bag-handle-outline" size={100} color={COLORS.border} />
             </View>
           )}
 
@@ -326,9 +337,14 @@ export default function ProductDetailScreen({ route, navigation }: any) {
           </View>
 
           {/* Stock */}
-          <View style={[styles.stockBadge, { backgroundColor: product.in_stock ? '#E8F8EF' : '#FEE2E2' }]}>
+          <View style={[styles.stockBadge, { backgroundColor: product.in_stock ? '#E8F8EF' : '#FEE2E2', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+            <IonIcon
+              name={product.in_stock ? 'checkmark' : 'close'}
+              size={14}
+              color={stockColor}
+            />
             <Text style={{ color: stockColor, fontSize: 13, fontWeight: '600' }}>
-              {product.in_stock ? '✓' : '✗'} {stockLabel}
+              {stockLabel}
             </Text>
           </View>
 
@@ -367,14 +383,14 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 style={styles.qtyBtn}
                 onPress={() => setQuantity(Math.max(1, quantity - 1))}
               >
-                <Text style={styles.qtyBtnText}>−</Text>
+                <IonIcon name="remove" size={20} color={COLORS.white} />
               </TouchableOpacity>
               <Text style={styles.qtyValue}>{quantity}</Text>
               <TouchableOpacity
                 style={styles.qtyBtn}
                 onPress={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
               >
-                <Text style={styles.qtyBtnText}>+</Text>
+                <IonIcon name="add" size={20} color={COLORS.white} />
               </TouchableOpacity>
             </View>
           </View>
@@ -445,7 +461,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                           resizeMode="cover"
                         />
                       ) : (
-                        <Text style={{ fontSize: 32 }}>🛍️</Text>
+                        <IonIcon name="bag-handle-outline" size={32} color={COLORS.border} />
                       )}
                     </View>
                     <Text style={styles.relatedName} numberOfLines={2}>{p.name}</Text>

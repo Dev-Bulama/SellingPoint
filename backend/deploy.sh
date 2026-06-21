@@ -1,35 +1,73 @@
-#!/bin/bash
-# Sellingpoint Production Deployment Script
+#!/usr/bin/env bash
+# =============================================================================
+# Sellingpoint -- Production Deployment Script
+# =============================================================================
+# Run this on the production server after pulling latest code.
+# Requires: PHP 8.2+, Composer, MySQL 8, a working .env file
+#
+# Usage:
+#   chmod +x deploy.sh
+#   ./deploy.sh
+# =============================================================================
 
-set -e
+set -euo pipefail
 
-echo "🚀 Deploying Sellingpoint..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
-# Maintenance mode
-php artisan down --message="Updating, back shortly" --retry=60 || true
+echo "========================================"
+echo "  Sellingpoint -- Production Deploy"
+echo "========================================"
 
-# Pull latest code
+# 1. Enable maintenance mode
+echo "[1/10] Enabling maintenance mode..."
+php artisan down --message="Maintenance in progress. Back shortly." --retry=60 || true
+
+# 2. Pull latest code
+echo "[2/10] Pulling latest code..."
 git pull origin main
 
-# Install PHP dependencies (no dev, optimized)
+# 3. Install PHP dependencies (no dev packages)
+echo "[3/10] Installing Composer dependencies..."
 composer install --no-dev --optimize-autoloader --no-interaction
 
-# Run migrations
+# 4. Clear all caches
+echo "[4/10] Clearing old caches..."
+php artisan optimize:clear
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+php artisan event:clear
+
+# 5. Run database migrations
+echo "[5/10] Running migrations..."
 php artisan migrate --force
 
-# Clear and rebuild caches
+# 6. Create storage symlink
+echo "[6/10] Ensuring storage symlink..."
+php artisan storage:link 2>/dev/null || true
+
+# 7. Rebuild caches
+echo "[7/10] Building production caches..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 php artisan event:cache
 
-# Create storage symlink if not exists
-php artisan storage:link 2>/dev/null || true
-
-# Restart queue workers
+# 8. Restart queue workers
+echo "[8/10] Restarting queue workers..."
 php artisan queue:restart
 
-# Come back online
+# 9. Set permissions
+echo "[9/10] Fixing permissions..."
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
+# 10. Bring site back up
+echo "[10/10] Disabling maintenance mode..."
 php artisan up
 
-echo "✅ Deployment complete!"
+echo ""
+echo "========================================"
+echo "  Deployment complete! Site is live."
+echo "========================================"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { authApi } from '../../api/auth';
 import { COLORS, SIZES } from '../../constants';
 import { getErrorMessage } from '../../utils/currency';
@@ -26,14 +27,14 @@ export default function ForgotPasswordScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-        <Text style={styles.backText}>← Back</Text>
+        <IonIcon name="arrow-back" size={22} color={COLORS.text} />
       </TouchableOpacity>
       <Text style={styles.title}>Forgot Password?</Text>
       <Text style={styles.subtitle}>Enter your email and we'll send you an OTP to reset your password.</Text>
 
       {success ? (
         <View style={styles.successBox}>
-          <Text style={styles.successText}>✅ OTP sent! Check your email.</Text>
+          <Text style={styles.successText}>OTP sent! Check your email.</Text>
         </View>
       ) : (
         <>

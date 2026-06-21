@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SIZES } from '../../constants';
 
@@ -19,9 +20,9 @@ export default function NoInternetScreen({ onRetry }: NoInternetScreenProps) {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>📶</Text>
+          <IonIcon name="cloud-offline-outline" size={80} color={COLORS.border} />
           <View style={styles.xMark}>
-            <Text style={styles.xMarkText}>✕</Text>
+            <IonIcon name="close" size={14} color={COLORS.white} />
           </View>
         </View>
 

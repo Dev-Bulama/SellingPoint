@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { Address } from '../../types';
 import { COLORS, SIZES } from '../../constants';
@@ -37,7 +38,7 @@ export default function AddressesScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.backText}>← Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><IonIcon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
         <Text style={styles.headerTitle}>My Addresses</Text>
         <TouchableOpacity onPress={() => navigation.navigate('AddAddress')}><Text style={styles.addText}>+ Add</Text></TouchableOpacity>
       </View>
@@ -66,7 +67,7 @@ export default function AddressesScreen({ navigation }: any) {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>📍</Text>
+            <IonIcon name="location-outline" size={64} color={COLORS.textMuted} style={styles.emptyIcon} />
             <Text style={styles.emptyTitle}>No addresses yet</Text>
             <TouchableOpacity style={styles.addAddrBtn} onPress={() => navigation.navigate('AddAddress')}>
               <Text style={styles.addAddrBtnText}>Add Address</Text>
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
   deleteBtn: { borderColor: COLORS.danger },
   deleteBtnText: { color: COLORS.danger, fontSize: 13 },
   empty: { alignItems: 'center', paddingTop: 80 },
-  emptyEmoji: { fontSize: 64, marginBottom: 16 },
+  emptyIcon: { marginBottom: 16 },
   emptyTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 24 },
   addAddrBtn: { backgroundColor: COLORS.primary, paddingVertical: 14, paddingHorizontal: 32, borderRadius: SIZES.borderRadius },
   addAddrBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },

@@ -9,6 +9,7 @@ import {
   Share,
   StatusBar,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import apiClient from '../../api/client';
 import { COLORS, SIZES, ORDER_STATUSES, PAYMENT_STATUSES } from '../../constants';
@@ -118,13 +119,13 @@ export default function OrderReceiptScreen({ route, navigation }: any) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
-            <Text style={styles.headerBackIcon}>←</Text>
+            <IonIcon name="arrow-back" size={22} color={COLORS.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Order Receipt</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>⚠️</Text>
+          <IonIcon name="warning" size={48} color="orange" style={{ marginBottom: SIZES.base }} />
           <Text style={styles.errorText}>{error ?? 'Order not found'}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchOrder}>
             <Text style={styles.retryButtonText}>Try Again</Text>
@@ -141,11 +142,11 @@ export default function OrderReceiptScreen({ route, navigation }: any) {
       {/* Sticky header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
-          <Text style={styles.headerBackIcon}>←</Text>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Receipt</Text>
         <TouchableOpacity onPress={handleShare} style={styles.shareHeaderButton}>
-          <Text style={styles.shareHeaderIcon}>⬆️</Text>
+          <IonIcon name="share-outline" size={22} color={COLORS.text} />
         </TouchableOpacity>
       </View>
 
@@ -294,7 +295,7 @@ export default function OrderReceiptScreen({ route, navigation }: any) {
 
           {/* Thank you note */}
           <View style={styles.thankYouContainer}>
-            <Text style={styles.thankYouText}>Thank you for shopping with us! 🎉</Text>
+            <Text style={styles.thankYouText}>Thank you for shopping with us!</Text>
           </View>
         </View>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
 import { Order } from '../../types';
 import { COLORS, SIZES, ORDER_STATUSES, PAYMENT_STATUSES } from '../../constants';
@@ -39,7 +40,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.backText}>← Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><IonIcon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
         <View style={{ width: 60 }} />
       </View>
@@ -61,7 +62,9 @@ export default function OrderDetailScreen({ route, navigation }: any) {
             {STEPS.map((step, i) => (
               <View key={step} style={styles.stepItem}>
                 <View style={[styles.stepCircle, i <= currentStep && styles.activeStepCircle]}>
-                  <Text style={styles.stepIcon}>{i <= currentStep ? '✓' : String(i + 1)}</Text>
+                  {i <= currentStep
+                    ? <IonIcon name="checkmark" size={14} color="white" />
+                    : <Text style={styles.stepIcon}>{String(i + 1)}</Text>}
                 </View>
                 <Text style={[styles.stepLabel, i <= currentStep && styles.activeStepLabel]}>
                   {ORDER_STATUSES[step as keyof typeof ORDER_STATUSES]?.label}
@@ -103,7 +106,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
         <Text style={styles.sectionTitle}>Order Items</Text>
         {order.items.map(item => (
           <View key={item.id} style={styles.itemRow}>
-            <View style={styles.itemImage}><Text style={{ fontSize: 28 }}>🛍️</Text></View>
+            <View style={styles.itemImage}><IonIcon name="bag-outline" size={28} color={COLORS.textMuted} /></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.itemName}>{item.product_name}</Text>
               {item.variant_name && <Text style={styles.itemVariant}>{item.variant_name}</Text>}

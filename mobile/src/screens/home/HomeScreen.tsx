@@ -10,6 +10,7 @@ import { cmsApi } from '../../api/cms';
 import { Product, Category, Banner } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { useCartStore } from '../../store/cartStore';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
 const RECENTLY_VIEWED_KEY = 'recently_viewed';
@@ -80,7 +81,7 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
           />
         ) : (
           <View style={styles.productImagePlaceholder}>
-            <Text style={styles.placeholderEmoji}>🛍️</Text>
+            <IonIcon name="bag-handle-outline" size={32} color={COLORS.border} />
           </View>
         )}
         {product.discount_percentage > 0 && (
@@ -98,7 +99,7 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
           )}
         </View>
         <View style={styles.ratingRow}>
-          <Text style={styles.star}>⭐</Text>
+          <IonIcon name="star" size={11} color="#F5A623" />
           <Text style={styles.ratingText}>{product.average_rating.toFixed(1)}</Text>
           <Text style={styles.soldText}> · {product.sold_count} sold</Text>
         </View>
@@ -183,14 +184,14 @@ export default function HomeScreen({ navigation }: any) {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello 👋</Text>
+          <Text style={styles.greeting}>Hello</Text>
           <Text style={styles.subGreeting}>What are you shopping for today?</Text>
         </View>
         <TouchableOpacity
           onPress={() => navigation.navigate('Notifications')}
           style={styles.notifBtn}
         >
-          <Text style={styles.notifIcon}>🔔</Text>
+          <IonIcon name="notifications-outline" size={22} color={COLORS.text} />
         </TouchableOpacity>
       </View>
 
@@ -200,7 +201,7 @@ export default function HomeScreen({ navigation }: any) {
         onPress={() => navigation.navigate('ProductList', { title: 'Search Products' })}
         activeOpacity={0.8}
       >
-        <Text style={styles.searchIcon}>🔍</Text>
+        <IonIcon name="search" size={16} color={COLORS.textMuted} style={{ marginRight: 8 }} />
         <Text style={styles.searchPlaceholder}>Search products, brands...</Text>
       </TouchableOpacity>
 
@@ -276,7 +277,7 @@ export default function HomeScreen({ navigation }: any) {
                 {cat.image_url ? (
                   <Image source={{ uri: cat.image_url }} style={styles.categoryImage} resizeMode="cover" />
                 ) : (
-                  <Text style={styles.categoryEmoji}>🏷️</Text>
+                  <IonIcon name="pricetag-outline" size={24} color={COLORS.text} />
                 )}
               </View>
               <Text style={styles.categoryName} numberOfLines={2}>{cat.name}</Text>
@@ -289,7 +290,7 @@ export default function HomeScreen({ navigation }: any) {
           <View style={styles.flashSaleSection}>
             <View style={styles.flashHeader}>
               <View style={styles.flashTitleRow}>
-                <Text style={styles.flashTitle}>⚡ Flash Sale</Text>
+                <Text style={styles.flashTitle}>Flash Sale</Text>
                 <CountdownTimer endsAt={flashSaleEnd} />
               </View>
               <TouchableOpacity onPress={() => goToList({ title: 'Flash Sales' })}>

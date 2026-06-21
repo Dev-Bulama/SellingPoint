@@ -9,6 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sellingpoint';
@@ -60,7 +61,7 @@ export default function ForceUpdateScreen({ route }: ForceUpdateScreenProps) {
 
       <View style={styles.content}>
         <View style={styles.updateIconContainer}>
-          <Text style={styles.updateIcon}>🔄</Text>
+          <IonIcon name="refresh-circle" size={72} color={COLORS.primary} />
         </View>
 
         <Text style={styles.title}>Update Required</Text>
@@ -95,7 +96,7 @@ export default function ForceUpdateScreen({ route }: ForceUpdateScreenProps) {
 
         <TouchableOpacity style={styles.updateButton} onPress={handleUpdate} activeOpacity={0.85}>
           <Text style={styles.updateButtonText}>Update Now</Text>
-          <Text style={styles.updateButtonIcon}> ↗</Text>
+          <IonIcon name="arrow-forward" size={18} color={COLORS.white} style={{ marginLeft: 6 }} />
         </TouchableOpacity>
 
         <Text style={styles.footnote}>

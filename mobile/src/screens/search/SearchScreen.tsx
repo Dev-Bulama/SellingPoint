@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { COLORS, SIZES } from '../../constants';
 import { Product, Category } from '../../types';
@@ -37,7 +38,7 @@ function ProductCard({ item, onPress }: ProductCardProps) {
         <Image source={{ uri: item.thumbnail_url }} style={styles.productImage} resizeMode="cover" />
       ) : (
         <View style={[styles.productImage, styles.productImagePlaceholder]}>
-          <Text style={styles.productImagePlaceholderText}>🛍️</Text>
+          <IonIcon name="bag-handle-outline" size={36} color={COLORS.border} />
         </View>
       )}
       <View style={styles.productInfo}>
@@ -191,10 +192,10 @@ export default function SearchScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backIcon}>←</Text>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
         </TouchableOpacity>
         <View style={styles.inputWrapper}>
-          <Text style={styles.inputSearchIcon}>🔍</Text>
+          <IonIcon name="search" size={16} color={COLORS.textMuted} style={{ marginRight: SIZES.xs }} />
           <TextInput
             ref={inputRef}
             style={styles.input}
@@ -209,7 +210,7 @@ export default function SearchScreen({ navigation }: any) {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={handleClearInput} style={styles.clearButton}>
-              <Text style={styles.clearIcon}>✕</Text>
+              <IonIcon name="close-circle" size={18} color={COLORS.grayDark} />
             </TouchableOpacity>
           )}
         </View>
@@ -239,7 +240,7 @@ export default function SearchScreen({ navigation }: any) {
                     onPress={() => handleRecentTap(term)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.chipIcon}>🕐</Text>
+                    <IonIcon name="time-outline" size={12} color={COLORS.textSecondary} />
                     <Text style={styles.chipText}>{term}</Text>
                   </TouchableOpacity>
                 ))}
@@ -266,7 +267,7 @@ export default function SearchScreen({ navigation }: any) {
                     {cat.icon ? (
                       <Text style={styles.categoryChipIcon}>{cat.icon}</Text>
                     ) : (
-                      <Text style={styles.categoryChipIcon}>🏷️</Text>
+                      <IonIcon name="pricetag-outline" size={16} color={COLORS.text} />
                     )}
                     <Text style={styles.categoryChipText} numberOfLines={1}>
                       {cat.name}
@@ -284,7 +285,7 @@ export default function SearchScreen({ navigation }: any) {
         </View>
       ) : results.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>🔍</Text>
+          <IonIcon name="search" size={60} color={COLORS.border} style={{ marginBottom: SIZES.base }} />
           <Text style={styles.emptyTitle}>No results found</Text>
           <Text style={styles.emptySubtitle}>
             We couldn't find anything for "{query}".{'\n'}Try a different keyword.

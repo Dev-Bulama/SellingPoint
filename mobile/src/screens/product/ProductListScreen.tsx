@@ -7,6 +7,7 @@ import { COLORS, SIZES } from '../../constants';
 import { productsApi } from '../../api/products';
 import { Product } from '../../types';
 import { formatCurrency } from '../../utils/currency';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const SORT_OPTIONS = [
   { label: 'Latest', value: 'latest' },
@@ -20,7 +21,7 @@ function ProductGridItem({ product, onPress }: { product: Product; onPress: () =
   return (
     <TouchableOpacity style={styles.gridItem} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.gridImageBox}>
-        <Text style={styles.gridEmoji}>🛍️</Text>
+        <IonIcon name="bag-handle-outline" size={52} color={COLORS.border} />
         {product.discount_percentage > 0 && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>-{product.discount_percentage}%</Text>
@@ -39,7 +40,8 @@ function ProductGridItem({ product, onPress }: { product: Product; onPress: () =
           <Text style={styles.gridOriginal}>{formatCurrency(product.price)}</Text>
         )}
         <View style={styles.ratingRow}>
-          <Text style={styles.star}>⭐ {product.average_rating.toFixed(1)}</Text>
+          <IonIcon name="star" size={11} color="#F5A623" />
+          <Text style={[styles.star, { marginLeft: 2 }]}>{product.average_rating.toFixed(1)}</Text>
           <Text style={styles.soldText}> · {product.sold_count}</Text>
         </View>
       </View>
@@ -94,7 +96,7 @@ export default function ProductListScreen({ route, navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
         <View style={{ width: 40 }} />
@@ -102,7 +104,7 @@ export default function ProductListScreen({ route, navigation }: any) {
 
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <IonIcon name="search" size={14} color={COLORS.textMuted} style={{ marginRight: 6 }} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search..."
@@ -143,7 +145,7 @@ export default function ProductListScreen({ route, navigation }: any) {
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🔍</Text>
+              <IonIcon name="search" size={64} color={COLORS.border} style={{ marginBottom: 16 }} />
               <Text style={styles.emptyText}>No products found</Text>
               <Text style={styles.emptySubtext}>Try different search terms or filters</Text>
             </View>

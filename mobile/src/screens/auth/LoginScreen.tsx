@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS, SIZES } from '../../constants';
 import { getErrorMessage } from '../../utils/currency';
@@ -59,7 +60,7 @@ export default function LoginScreen({ navigation }: any) {
                 onChangeText={setPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                <Text>{showPassword ? '👁️' : '🔒'}</Text>
+                <IonIcon name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>

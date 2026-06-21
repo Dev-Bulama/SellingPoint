@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, Image, Animated, Pressable,
   Dimensions,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
 import { useCartStore } from '../../store/cartStore';
 import { CartItem } from '../../types';
@@ -60,7 +61,7 @@ function CartItemRow({
       {/* Delete reveal layer */}
       <View style={styles.deleteReveal}>
         <TouchableOpacity style={styles.deleteBtn} onPress={confirmRemove}>
-          <Text style={styles.deleteBtnText}>🗑</Text>
+          <IonIcon name="trash-outline" size={20} color={COLORS.white} />
           <Text style={styles.deleteBtnLabel}>Remove</Text>
         </TouchableOpacity>
       </View>
@@ -77,7 +78,7 @@ function CartItemRow({
                 resizeMode="cover"
               />
             ) : (
-              <Text style={{ fontSize: 32 }}>🛍️</Text>
+              <IonIcon name="bag-handle-outline" size={32} color={COLORS.border} />
             )}
           </View>
 
@@ -98,9 +99,10 @@ function CartItemRow({
                     : confirmRemove()
                 }
               >
-                <Text style={[styles.qtyBtnText, item.quantity === 1 && { color: COLORS.danger }]}>
-                  {item.quantity === 1 ? '✕' : '−'}
-                </Text>
+                {item.quantity === 1
+                  ? <IonIcon name="close" size={16} color={COLORS.danger} />
+                  : <IonIcon name="remove" size={16} color={COLORS.text} />
+                }
               </TouchableOpacity>
 
               <Text style={styles.qtyValue}>{item.quantity}</Text>
@@ -109,7 +111,7 @@ function CartItemRow({
                 style={styles.qtyCircleBtn}
                 onPress={() => onUpdateQty(item.id, item.quantity + 1)}
               >
-                <Text style={styles.qtyBtnText}>+</Text>
+                <IonIcon name="add" size={16} color={COLORS.text} />
               </TouchableOpacity>
 
               <Text style={styles.subtotal}>{formatCurrency(item.subtotal)}</Text>
@@ -130,7 +132,7 @@ function EmptyCart({ onShopNow }: { onShopNow: () => void }) {
       {/* Cart illustration */}
       <View style={styles.emptyIllustration}>
         <View style={styles.emptyCircle}>
-          <Text style={styles.emptyCartIcon}>🛒</Text>
+          <IonIcon name="cart-outline" size={64} color={COLORS.border} />
         </View>
         {/* Floating dots for decoration */}
         <View style={[styles.floatDot, { top: 10, right: 20, width: 10, height: 10, backgroundColor: COLORS.primaryLight }]} />

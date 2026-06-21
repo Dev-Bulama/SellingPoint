@@ -12,6 +12,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import apiClient from '../../api/client';
 import { COLORS, SIZES } from '../../constants';
@@ -69,7 +70,7 @@ function ReportIssueModal({ visible, onClose, onSubmit, submitting }: ReportIssu
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Report an Issue</Text>
           <TouchableOpacity onPress={handleClose} style={styles.modalCloseButton}>
-            <Text style={styles.modalCloseIcon}>✕</Text>
+            <IonIcon name="close" size={20} color={COLORS.grayDark} />
           </TouchableOpacity>
         </View>
 
@@ -132,24 +133,25 @@ function ReportIssueModal({ visible, onClose, onSubmit, submitting }: ReportIssu
 }
 
 interface MenuItemProps {
-  icon: string;
+  iconName: string;
+  iconColor?: string;
   title: string;
   subtitle?: string;
   onPress: () => void;
   rightElement?: React.ReactNode;
 }
 
-function MenuItem({ icon, title, subtitle, onPress, rightElement }: MenuItemProps) {
+function MenuItem({ iconName, iconColor, title, subtitle, onPress, rightElement }: MenuItemProps) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.menuIconContainer}>
-        <Text style={styles.menuIcon}>{icon}</Text>
+        <IonIcon name={iconName} size={20} color={iconColor ?? COLORS.text} />
       </View>
       <View style={styles.menuContent}>
         <Text style={styles.menuTitle}>{title}</Text>
         {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
       </View>
-      {rightElement ?? <Text style={styles.menuArrow}>›</Text>}
+      {rightElement ?? <IonIcon name="chevron-forward" size={18} color={COLORS.textMuted} />}
     </TouchableOpacity>
   );
 }
@@ -233,7 +235,7 @@ export default function SupportScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Support</Text>
         <View style={styles.headerSpacer} />
@@ -242,7 +244,7 @@ export default function SupportScreen({ navigation }: any) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero Banner */}
         <View style={styles.heroBanner}>
-          <Text style={styles.heroIcon}>🎧</Text>
+          <IonIcon name="headset-outline" size={48} color={COLORS.white} style={{ marginBottom: SIZES.sm }} />
           <Text style={styles.heroTitle}>How can we help?</Text>
           <Text style={styles.heroSubtitle}>Contact us anytime</Text>
           {settingsLoading ? (
@@ -257,7 +259,8 @@ export default function SupportScreen({ navigation }: any) {
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <View style={styles.menuGroup}>
             <MenuItem
-              icon="💬"
+              iconName="logo-whatsapp"
+              iconColor="#25D366"
               title="WhatsApp Support"
               subtitle={
                 settings.whatsapp_number
@@ -268,7 +271,7 @@ export default function SupportScreen({ navigation }: any) {
             />
             <View style={styles.separator} />
             <MenuItem
-              icon="📧"
+              iconName="mail-outline"
               title="Email Support"
               subtitle={settings.support_email ?? 'support@sellingpoint.com'}
               onPress={openEmail}
@@ -281,14 +284,14 @@ export default function SupportScreen({ navigation }: any) {
           <Text style={styles.sectionTitle}>Self-Service</Text>
           <View style={styles.menuGroup}>
             <MenuItem
-              icon="❓"
+              iconName="help-circle-outline"
               title="FAQ"
               subtitle="Find answers to common questions"
               onPress={() => navigation.navigate('FAQ')}
             />
             <View style={styles.separator} />
             <MenuItem
-              icon="🐛"
+              iconName="alert-circle-outline"
               title="Report an Issue"
               subtitle="Tell us what went wrong"
               onPress={() => setShowReportModal(true)}
@@ -298,7 +301,7 @@ export default function SupportScreen({ navigation }: any) {
 
         {/* Response Time Notice */}
         <View style={styles.noticeCard}>
-          <Text style={styles.noticeIcon}>⏱️</Text>
+          <IonIcon name="time-outline" size={22} color={COLORS.info} style={{ marginRight: SIZES.sm }} />
           <View style={styles.noticeContent}>
             <Text style={styles.noticeTitle}>Typical Response Time</Text>
             <Text style={styles.noticeText}>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
 
 export default function OrderSuccessScreen({ route, navigation }: any) {
@@ -8,7 +9,7 @@ export default function OrderSuccessScreen({ route, navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.checkmark}>✅</Text>
+        <IonIcon name="checkmark-circle" size={80} color="green" style={styles.checkmark} />
         <Text style={styles.title}>Order Placed!</Text>
         <Text style={styles.subtitle}>Your order has been placed successfully.</Text>
         <View style={styles.orderBox}>
@@ -38,7 +39,7 @@ export default function OrderSuccessScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: SIZES.screenPadding },
   card: { backgroundColor: COLORS.white, borderRadius: SIZES.borderRadiusLg, padding: 32, alignItems: 'center', width: '100%', elevation: 4 },
-  checkmark: { fontSize: 80, marginBottom: 20 },
+  checkmark: { marginBottom: 20 },
   title: { fontSize: 26, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
   subtitle: { fontSize: 15, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 24 },
   orderBox: { backgroundColor: COLORS.grayLight, borderRadius: SIZES.borderRadius, padding: 16, width: '100%', alignItems: 'center', marginBottom: 20 },

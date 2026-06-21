@@ -271,6 +271,27 @@ When you make changes to the app and want to release a new version:
 
 ---
 
+## React Native Vector Icons — Font Setup
+
+The app uses `react-native-vector-icons` for all icons. This library requires
+the icon font files to be bundled into the Android app.
+
+React Native 0.60+ uses autolinking — the library links itself automatically.
+However, **fonts must be listed in `android/app/build.gradle`**:
+
+```gradle
+// android/app/build.gradle — add inside the `android { ... }` block:
+project.ext.vectoricons = [
+    iconFontNames: [ 'Ionicons.ttf', 'MaterialIcons.ttf' ]
+]
+
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+```
+
+If you skip this step, icons render as empty boxes on Android.
+
+---
+
 ## Common Build Errors
 
 ### "Keystore file not found"

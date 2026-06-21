@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { cmsApi } from '../../api/cms';
 import { COLORS, SIZES } from '../../constants';
 
@@ -15,7 +16,9 @@ export default function FaqScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.backText}>← Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>FAQ</Text>
         <View style={{ width: 60 }} />
       </View>
@@ -25,7 +28,7 @@ export default function FaqScreen({ navigation }: any) {
             <View key={i} style={styles.faqItem}>
               <TouchableOpacity style={styles.question} onPress={() => setExpanded(expanded === i ? null : i)}>
                 <Text style={styles.questionText}>{faq.question}</Text>
-                <Text style={styles.chevron}>{expanded === i ? '▲' : '▼'}</Text>
+                <IonIcon name={expanded === i ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textSecondary} />
               </TouchableOpacity>
               {expanded === i && <Text style={styles.answer}>{faq.answer}</Text>}
             </View>
@@ -39,7 +42,7 @@ export default function FaqScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 16, backgroundColor: COLORS.white },
-  backText: { color: COLORS.primary, fontSize: 15 },
+  backBtn: { padding: 4 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   faqItem: { backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius, marginBottom: 10, overflow: 'hidden', elevation: 1 },
   question: { flexDirection: 'row', alignItems: 'center', padding: 16 },

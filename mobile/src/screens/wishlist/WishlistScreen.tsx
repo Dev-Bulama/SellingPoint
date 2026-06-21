@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
 import { wishlistApi } from '../../api/wishlist';
 import { useCartStore } from '../../store/cartStore';
@@ -45,7 +46,7 @@ export default function WishlistScreen({ navigation }: any) {
       </View>
       {products.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>❤️</Text>
+          <IonIcon name="heart-outline" size={64} color={COLORS.border} style={{ marginBottom: 20 }} />
           <Text style={styles.emptyTitle}>Your wishlist is empty</Text>
           <Text style={styles.emptySub}>Save items you love for later</Text>
           <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('HomeTab')}>
@@ -64,7 +65,7 @@ export default function WishlistScreen({ navigation }: any) {
                 style={styles.itemContent}
                 onPress={() => navigation.navigate('HomeTab', { screen: 'ProductDetail', params: { slug: item.slug } })}
               >
-                <View style={styles.itemImage}><Text style={{ fontSize: 36 }}>🛍️</Text></View>
+                <View style={styles.itemImage}><IonIcon name="bag-handle-outline" size={36} color={COLORS.border} /></View>
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
                   <Text style={styles.itemPrice}>{formatCurrency(item.effective_price)}</Text>
@@ -81,7 +82,7 @@ export default function WishlistScreen({ navigation }: any) {
                   <Text style={styles.addCartText}>Add to Cart</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleRemove(item.id)} style={styles.removeBtn}>
-                  <Text style={styles.removeText}>🗑️</Text>
+                  <IonIcon name="trash-outline" size={18} color={COLORS.danger} />
                 </TouchableOpacity>
               </View>
             </View>

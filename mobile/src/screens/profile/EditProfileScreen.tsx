@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { COLORS, SIZES } from '../../constants';
@@ -36,7 +37,7 @@ export default function EditProfileScreen({ navigation }: any) {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>← Back</Text>
+            <IonIcon name="arrow-back" size={22} color={COLORS.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Profile</Text>
           <View style={{ width: 60 }} />
@@ -67,7 +68,7 @@ export default function EditProfileScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  backText: { color: COLORS.primary, fontSize: 15 },
+  backText: { color: COLORS.text, fontSize: 15 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   content: { padding: SIZES.screenPadding },
   inputGroup: { marginBottom: 20 },

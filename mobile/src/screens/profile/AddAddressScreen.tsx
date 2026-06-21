@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   TextInput, Switch, Alert, ActivityIndicator,
 } from 'react-native';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { COLORS, SIZES } from '../../constants';
 
@@ -43,7 +44,7 @@ export default function AddAddressScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+          <IonIcon name="arrow-back" size={22} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Address</Text>
         <View style={{ width: 60 }} />
