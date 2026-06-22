@@ -18,6 +18,8 @@ import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { COLORS, SIZES } from '../../constants';
 import { Product, Category } from '../../types';
+import { useCartStore } from '../../store/cartStore';
+import AppAlert from '../../components/AppAlert';
 
 const RECENT_SEARCHES_KEY = 'recent_searches';
 const MAX_RECENT = 8;
@@ -29,18 +31,36 @@ function formatPrice(amount: number) {
 interface ProductCardProps {
   item: Product;
   onPress: () => void;
+  onAddToCart: (id: number) => Promise<void>;
 }
 
-function ProductCard({ item, onPress }: ProductCardProps) {
+function ProductCard({ item, onPress, onAddToCart }: ProductCardProps) {
+  const [adding, setAdding] = useState(false);
+
+  const handleCart = async (e: any) => {
+    e.stopPropagation();
+    if (adding) return;
+    setAdding(true);
+    await onAddToCart(item.id);
+    setAdding(false);
+  };
+
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.8}>
-      {item.thumbnail_url ? (
-        <Image source={{ uri: item.thumbnail_url }} style={styles.productImage} resizeMode="cover" />
-      ) : (
-        <View style={[styles.productImage, styles.productImagePlaceholder]}>
-          <IonIcon name="bag-handle-outline" size={36} color={COLORS.border} />
-        </View>
-      )}
+      <View style={styles.imageBox}>
+        {item.thumbnail_url ? (
+          <Image source={{ uri: item.thumbnail_url }} style={styles.productImage} resizeMode="cover" />
+        ) : (
+          <View style={[styles.productImage, styles.productImagePlaceholder]}>
+            <IonIcon name="bag-handle-outline" size={36} color={COLORS.border} />
+          </View>
+        )}
+        <TouchableOpacity style={styles.cartFab} onPress={handleCart} disabled={adding} activeOpacity={0.85}>
+          {adding
+            ? <ActivityIndicator size="small" color={COLORS.white} />
+            : <IonIcon name="cart-outline" size={16} color={COLORS.white} />}
+        </TouchableOpacity>
+      </View>
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
         {item.discount_price ? (
@@ -72,6 +92,21 @@ export default function SearchScreen({ navigation }: any) {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '', autoDismissMs: undefined as number | undefined });
+  const { addItem } = useCartStore();
+
+  const handleAddToCart = useCallback(async (productId: number) => {
+    const product = results.find(p => p.id === productId);
+    setAlertProps({ icon: 'checkmark-circle', iconColor: COLORS.success, title: 'Added to Cart', message: `${product?.name ?? 'Item'} added successfully!`, autoDismissMs: 2500 });
+    setAlertVisible(true);
+    try {
+      await addItem(productId, 1);
+    } catch {
+      setAlertProps({ icon: 'close-circle', iconColor: COLORS.danger, title: 'Error', message: 'Could not add to cart.', autoDismissMs: undefined });
+      setAlertVisible(true);
+    }
+  }, [addItem, results]);
 
   // Auto-focus on mount
   useEffect(() => {
@@ -187,6 +222,15 @@ export default function SearchScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        autoDismissMs={alertProps.autoDismissMs}
+        onDismiss={() => setAlertVisible(false)}
+      />
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
       {/* Header */}
@@ -201,7 +245,6 @@ export default function SearchScreen({ navigation }: any) {
             style={styles.input}
             placeholder="Search products, brands, categories..."
             placeholderTextColor="#BDBDBD"
-            placeholderTextColor={COLORS.placeholder}
             value={query}
             onChangeText={handleQueryChange}
             onSubmitEditing={handleSubmitSearch}
@@ -311,7 +354,7 @@ export default function SearchScreen({ navigation }: any) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
-              <ProductCard item={item} onPress={() => handleProductTap(item)} />
+              <ProductCard item={item} onPress={() => handleProductTap(item)} onAddToCart={handleAddToCart} />
             )}
           />
         </>
@@ -521,10 +564,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 2,
   },
+  imageBox: { position: 'relative' },
   productImage: {
     width: '100%',
     aspectRatio: 1,
     backgroundColor: COLORS.grayLight,
+  },
+  cartFab: {
+    position: 'absolute', bottom: 8, right: 8,
+    backgroundColor: COLORS.primary, borderRadius: 16,
+    width: 32, height: 32, alignItems: 'center', justifyContent: 'center',
+    elevation: 4,
   },
   productImagePlaceholder: {
     alignItems: 'center',

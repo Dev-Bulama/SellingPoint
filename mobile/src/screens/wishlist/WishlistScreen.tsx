@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl,
+  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Image,
 } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
@@ -8,11 +8,14 @@ import { wishlistApi } from '../../api/wishlist';
 import { useCartStore } from '../../store/cartStore';
 import { Product } from '../../types';
 import { formatCurrency } from '../../utils/currency';
+import AppAlert from '../../components/AppAlert';
 
 export default function WishlistScreen({ navigation }: any) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '', autoDismissMs: undefined as number | undefined });
   const { addItem } = useCartStore();
 
   const loadWishlist = async () => {
@@ -32,14 +35,30 @@ export default function WishlistScreen({ navigation }: any) {
   };
 
   const handleAddToCart = async (product: Product) => {
-    await addItem(product.id, 1);
-    await handleRemove(product.id);
+    setAlertProps({ icon: 'checkmark-circle', iconColor: COLORS.success, title: 'Added to Cart', message: `${product.name} added successfully!`, autoDismissMs: 2500 });
+    setAlertVisible(true);
+    try {
+      await addItem(product.id, 1);
+      await handleRemove(product.id);
+    } catch {
+      setAlertProps({ icon: 'close-circle', iconColor: COLORS.danger, title: 'Error', message: 'Could not add to cart.', autoDismissMs: undefined });
+      setAlertVisible(true);
+    }
   };
 
   if (loading) return <View style={styles.loading}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        autoDismissMs={alertProps.autoDismissMs}
+        onDismiss={() => setAlertVisible(false)}
+      />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Wishlist</Text>
         <Text style={styles.count}>{products.length} items</Text>
@@ -65,7 +84,11 @@ export default function WishlistScreen({ navigation }: any) {
                 style={styles.itemContent}
                 onPress={() => navigation.navigate('HomeTab', { screen: 'ProductDetail', params: { slug: item.slug } })}
               >
-                <View style={styles.itemImage}><IonIcon name="bag-handle-outline" size={36} color={COLORS.border} /></View>
+                <View style={styles.itemImage}>
+                  {item.thumbnail_url
+                    ? <Image source={{ uri: item.thumbnail_url }} style={styles.itemImageImg} resizeMode="cover" />
+                    : <IonIcon name="bag-handle-outline" size={36} color={COLORS.border} />}
+                </View>
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
                   <Text style={styles.itemPrice}>{formatCurrency(item.effective_price)}</Text>
@@ -111,7 +134,8 @@ const styles = StyleSheet.create({
   shopBtnText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
   item: { backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius, marginBottom: 12, overflow: 'hidden', elevation: 1 },
   itemContent: { flexDirection: 'row', padding: 12 },
-  itemImage: { width: 80, height: 80, borderRadius: 8, backgroundColor: COLORS.grayLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  itemImage: { width: 80, height: 80, borderRadius: 8, backgroundColor: COLORS.grayLight, alignItems: 'center', justifyContent: 'center', marginRight: 12, overflow: 'hidden' },
+  itemImageImg: { width: 80, height: 80, borderRadius: 8 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 14, fontWeight: '500', color: COLORS.text, marginBottom: 4 },
   itemPrice: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary, marginBottom: 2 },

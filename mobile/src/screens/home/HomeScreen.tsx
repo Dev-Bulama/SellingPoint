@@ -346,9 +346,13 @@ export default function HomeScreen({ navigation }: any) {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '', autoDismissMs: undefined as number | undefined });
 
+  const allProductsRef = useRef<Product[]>([]);
+  useEffect(() => {
+    allProductsRef.current = [...flashSales, ...newArrivals, ...recentlyViewed];
+  }, [flashSales, newArrivals, recentlyViewed]);
+
   const handleAddToCart = useCallback(async (productId: number) => {
-    const allProducts = [...flashSales, ...newArrivals, ...recentlyViewed];
-    const product = allProducts.find(p => p.id === productId);
+    const product = allProductsRef.current.find(p => p.id === productId);
     setAlertProps({ icon: 'checkmark-circle', iconColor: COLORS.success, title: 'Added to Cart', message: `${product?.name ?? 'Item'} added successfully!`, autoDismissMs: 2500 });
     setAlertVisible(true);
     try {
@@ -357,7 +361,7 @@ export default function HomeScreen({ navigation }: any) {
       setAlertProps({ icon: 'close-circle', iconColor: COLORS.danger, title: 'Error', message: 'Could not add to cart.', autoDismissMs: undefined });
       setAlertVisible(true);
     }
-  }, [addItem, flashSales, newArrivals, recentlyViewed]);
+  }, [addItem]);
 
   const firstName = user?.name?.trim().split(' ')[0] ?? '';
 
