@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, RefreshControl, ScrollView,
+  TextInput, ActivityIndicator, RefreshControl, ScrollView, Image,
 } from 'react-native';
 import { COLORS, SIZES } from '../../constants';
 import { productsApi } from '../../api/products';
 import { Product } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import IonIcon from 'react-native-vector-icons/Ionicons';
+import { useCartStore } from '../../store/cartStore';
+import AppAlert from '../../components/AppAlert';
 
 const SORT_OPTIONS = [
   { label: 'Latest',      value: 'latest' },
@@ -17,11 +19,27 @@ const SORT_OPTIONS = [
   { label: 'Rating',      value: 'rating' },
 ];
 
-function ProductGridItem({ product, onPress }: { product: Product; onPress: () => void }) {
+function ProductGridItem({ product, onPress, onAddToCart }: {
+  product: Product; onPress: () => void; onAddToCart: (id: number) => Promise<void>;
+}) {
+  const [adding, setAdding] = useState(false);
+
+  const handleCart = async (e: any) => {
+    e.stopPropagation();
+    if (adding) return;
+    setAdding(true);
+    await onAddToCart(product.id);
+    setAdding(false);
+  };
+
   return (
     <TouchableOpacity style={styles.gridItem} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.gridImageBox}>
-        <IonIcon name="bag-handle-outline" size={52} color={COLORS.border} />
+        {product.thumbnail_url ? (
+          <Image source={{ uri: product.thumbnail_url }} style={styles.gridImage} resizeMode="cover" />
+        ) : (
+          <IonIcon name="bag-handle-outline" size={52} color={COLORS.border} />
+        )}
         {product.discount_percentage > 0 && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>-{product.discount_percentage}%</Text>
@@ -32,6 +50,11 @@ function ProductGridItem({ product, onPress }: { product: Product; onPress: () =
             <Text style={styles.outOfStockText}>Out of Stock</Text>
           </View>
         )}
+        <TouchableOpacity style={styles.cartFab} onPress={handleCart} disabled={adding} activeOpacity={0.85}>
+          {adding
+            ? <ActivityIndicator size="small" color={COLORS.white} />
+            : <IonIcon name="cart-outline" size={16} color={COLORS.white} />}
+        </TouchableOpacity>
       </View>
       <View style={styles.gridInfo}>
         <Text style={styles.gridName} numberOfLines={2}>{product.name}</Text>
@@ -57,6 +80,21 @@ export default function ProductListScreen({ route, navigation }: any) {
   const [searchText, setSearchText] = useState(search || '');
   const [sort, setSort] = useState('latest');
   const [error, setError] = useState('');
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '', autoDismissMs: undefined as number | undefined });
+  const { addItem } = useCartStore();
+
+  const handleAddToCart = async (productId: number) => {
+    const product = products.find(p => p.id === productId);
+    setAlertProps({ icon: 'checkmark-circle', iconColor: COLORS.success, title: 'Added to Cart', message: `${product?.name ?? 'Item'} added successfully!`, autoDismissMs: 2500 });
+    setAlertVisible(true);
+    try {
+      await addItem(productId, 1);
+    } catch {
+      setAlertProps({ icon: 'close-circle', iconColor: COLORS.danger, title: 'Error', message: 'Could not add to cart. Please try again.', autoDismissMs: undefined });
+      setAlertVisible(true);
+    }
+  };
 
   const loadingRef = useRef(false);
   const pageRef = useRef(1);
@@ -122,6 +160,15 @@ export default function ProductListScreen({ route, navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        autoDismissMs={alertProps.autoDismissMs}
+        onDismiss={() => setAlertVisible(false)}
+      />
       {/* Fixed header — never scrolls away */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -182,7 +229,7 @@ export default function ProductListScreen({ route, navigation }: any) {
         contentContainerStyle={styles.grid}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         renderItem={({ item }) => (
-          <ProductGridItem product={item} onPress={() => navigation.navigate('ProductDetail', { slug: item.slug })} />
+          <ProductGridItem product={item} onPress={() => navigation.navigate('ProductDetail', { slug: item.slug })} onAddToCart={handleAddToCart} />
         )}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.3}
@@ -244,6 +291,13 @@ const styles = StyleSheet.create({
     height: 160, backgroundColor: COLORS.grayLight,
     alignItems: 'center', justifyContent: 'center', position: 'relative',
     borderTopLeftRadius: SIZES.borderRadius, borderTopRightRadius: SIZES.borderRadius, overflow: 'hidden',
+  },
+  gridImage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  cartFab: {
+    position: 'absolute', bottom: 8, right: 8,
+    backgroundColor: COLORS.primary, borderRadius: 16,
+    width: 32, height: 32, alignItems: 'center', justifyContent: 'center',
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
   },
   discountBadge: {
     position: 'absolute', top: 8, left: 8,

@@ -14,6 +14,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import IonIcon from 'react-native-vector-icons/Ionicons';
+import AppAlert from '../../components/AppAlert';
 
 const { width } = Dimensions.get('window');
 const BANNER_WIDTH = width;
@@ -342,6 +343,21 @@ export default function HomeScreen({ navigation }: any) {
   const { fetchCart, cart, addItem } = useCartStore();
   const { user } = useAuthStore();
   const { unreadCount, fetchUnreadCount } = useNotificationStore();
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '', autoDismissMs: undefined as number | undefined });
+
+  const handleAddToCart = useCallback(async (productId: number) => {
+    const allProducts = [...flashSales, ...newArrivals, ...recentlyViewed];
+    const product = allProducts.find(p => p.id === productId);
+    setAlertProps({ icon: 'checkmark-circle', iconColor: COLORS.success, title: 'Added to Cart', message: `${product?.name ?? 'Item'} added successfully!`, autoDismissMs: 2500 });
+    setAlertVisible(true);
+    try {
+      await addItem(productId, 1);
+    } catch {
+      setAlertProps({ icon: 'close-circle', iconColor: COLORS.danger, title: 'Error', message: 'Could not add to cart.', autoDismissMs: undefined });
+      setAlertVisible(true);
+    }
+  }, [addItem, flashSales, newArrivals, recentlyViewed]);
 
   const firstName = user?.name?.trim().split(' ')[0] ?? '';
 
@@ -404,6 +420,15 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        autoDismissMs={alertProps.autoDismissMs}
+        onDismiss={() => setAlertVisible(false)}
+      />
       {/* ── Header ── */}
       <View style={styles.header}>
         <View>
@@ -478,7 +503,7 @@ export default function HomeScreen({ navigation }: any) {
               data={flashSales.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={handleAddToCart} />}
             />
           </View>
         )}
@@ -491,7 +516,7 @@ export default function HomeScreen({ navigation }: any) {
               data={featured.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={handleAddToCart} />}
             />
           </View>
         )}
@@ -504,7 +529,7 @@ export default function HomeScreen({ navigation }: any) {
               data={newArrivals.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={handleAddToCart} />}
             />
           </View>
         )}
@@ -517,7 +542,7 @@ export default function HomeScreen({ navigation }: any) {
               data={recentlyViewed} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={handleAddToCart} />}
             />
           </View>
         )}
