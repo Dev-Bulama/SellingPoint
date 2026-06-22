@@ -121,7 +121,7 @@ export default function CheckoutScreen({ navigation }: any) {
 
         popup.checkout({
           email: user?.email ?? '',
-          amount: Math.round(orderTotal * 100), // kobo — use backend order total, not frontend cart total
+          amount: orderTotal, // library multiplies by 100 internally — pass naira, not kobo
           reference,
           metadata: { order_number: order.order_number, user_id: user?.id },
           onSuccess: async () => {
