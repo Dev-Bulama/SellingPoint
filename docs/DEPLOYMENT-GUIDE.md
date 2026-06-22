@@ -376,16 +376,29 @@ Now that your server is running with HTTPS, register the webhook URL in Paystack
 
 ---
 
-## Step 14: Update Mobile App API URL
+## Step 14: Configure the Mobile App for Production
 
-Before building the release APK/AAB, update the API URL in the mobile app:
+The mobile app has a single bootstrap URL in `mobile/src/config/api.ts` — used only for the first settings fetch on startup. After that, the app automatically uses whatever URL the admin panel has configured.
 
-Edit `sellingpoint/mobile/src/constants/index.ts`:
+**Edit `mobile/src/config/api.ts`:**
 ```typescript
-export const API_BASE_URL = 'https://api.yourdomain.com/api/v1';
+const PRODUCTION_API_URL = 'https://api.yourdomain.com/api/v1';
 ```
 
-Then build the release APK (see [ANDROID-BUILD.md](ANDROID-BUILD.md)).
+This is the only hardcoded change needed for production. All future URL changes are made from the admin panel.
+
+**Then configure the admin panel** (Admin → Settings → Environment):
+
+| Field | Value |
+|---|---|
+| Active Environment | Production |
+| Production API URL | `https://api.yourdomain.com/api/v1` |
+| Production Domain | `https://api.yourdomain.com` |
+| Force Mobile App to Use Production | ON |
+
+The app fetches these settings on every launch and applies the active URL automatically — no rebuild needed to switch environments or update the URL in the future.
+
+Then build the release AAB (see [ANDROID-BUILD.md](ANDROID-BUILD.md)).
 
 ---
 

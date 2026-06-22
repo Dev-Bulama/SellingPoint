@@ -115,8 +115,9 @@ The queue worker handles background tasks: email sending, push notifications, et
 
 ## Section 8: Mobile App Build
 
-- [ ] `API_BASE_URL` in `mobile/src/constants/index.ts` points to the production HTTPS URL
+- [ ] `PRODUCTION_API_URL` in `mobile/src/config/api.ts` set to the production HTTPS URL (one-time change)
 - [ ] Production URL is HTTPS (not HTTP — Android blocks HTTP by default)
+- [ ] Admin → Settings → Environment configured: Active Environment = Production, Production API URL filled in, Force Production = ON
 - [ ] OneSignal App ID in mobile constants is correct (if using notifications)
 - [ ] `google-services.json` is present in `mobile/android/app/` (if using notifications)
 - [ ] Release keystore generated and backed up in at least 2 locations

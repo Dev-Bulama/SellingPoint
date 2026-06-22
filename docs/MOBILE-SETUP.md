@@ -222,36 +222,36 @@ added 1234 packages in 45s
 
 ## Step 8: Configure the API URL
 
-The mobile app needs to know the address of your backend API. This address is different depending on how you are running the app.
-
-Find and open this file:
-```
-sellingpoint/mobile/src/constants/index.ts
-```
-
-Look for the `API_BASE_URL` constant and update it:
+The file to edit is `mobile/src/config/api.ts`. It contains a bootstrap URL (used only for the very first request on app startup). After that first call, the app uses the URL configured in the admin panel.
 
 **If running on Android Emulator:**
 ```typescript
-export const API_BASE_URL = 'http://10.0.2.2:8000/api/v1';
+const LOCAL_API_URL = 'http://10.0.2.2:8000/api/v1';
 ```
-`10.0.2.2` is a special address that the Android emulator uses to reach the host machine (your computer). It is equivalent to `localhost` from the emulator's perspective.
+`10.0.2.2` is a special address the Android emulator uses to reach your host machine.
 
 **If running on a physical Android device:**
 ```typescript
-export const API_BASE_URL = 'http://192.168.1.X:8000/api/v1';
+const LOCAL_API_URL = 'http://192.168.1.X:8000/api/v1';
 ```
-Replace `192.168.1.X` with your computer's actual IP address on the local network. To find your IP:
-- Windows: run `ipconfig` in Command Prompt, look for IPv4 Address
-- Mac: run `ipconfig getifaddr en0` in Terminal
+Replace `192.168.1.X` with your computer's LAN IP address:
+- Windows: run `ipconfig` → IPv4 Address
+- Mac: run `ipconfig getifaddr en0`
 - Linux: run `hostname -I`
 
 Your phone and computer must be on the same Wi-Fi network.
 
-**For production (deployed server):**
+**For production builds:**
 ```typescript
-export const API_BASE_URL = 'https://api.yourdomain.com/api/v1';
+const PRODUCTION_API_URL = 'https://api.yourdomain.com/api/v1';
 ```
+
+After the first settings fetch, the admin panel controls which URL is active. Go to **Admin → Settings → Environment** and configure:
+- Active Environment: Production
+- Production API URL: `https://api.yourdomain.com/api/v1`
+- Force Mobile App to Use Production: ON
+
+This means you never need to rebuild the app just to change the API URL.
 
 ---
 
