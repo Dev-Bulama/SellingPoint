@@ -55,6 +55,7 @@ function CartStackNav({ navigation }: any) {
     <CartStack.Navigator screenOptions={{ headerShown: false }}>
       <CartStack.Screen name="Cart" component={CartScreen} />
       <CartStack.Screen name="Checkout" component={CheckoutScreen} />
+      <CartStack.Screen name="AddAddress" component={AddAddressScreen} />
       <CartStack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
       <CartStack.Screen name="OrderDetail" component={OrderDetailScreen} />
     </CartStack.Navigator>

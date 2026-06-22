@@ -43,7 +43,9 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): ?string
     {
-        return $this->thumbnail ? Storage::disk('public')->url($this->thumbnail) : null;
+        if (!$this->thumbnail) return null;
+        if (str_starts_with($this->thumbnail, 'http')) return $this->thumbnail;
+        return Storage::disk('public')->url($this->thumbnail);
     }
 
     public function getEffectivePriceAttribute(): float

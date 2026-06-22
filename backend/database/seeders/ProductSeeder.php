@@ -368,6 +368,23 @@ class ProductSeeder extends Seeder
             $brandId  = $data['brand'] ? $brand($data['brand']) : null;
             $slug     = Str::slug($data['name']);
 
+            // Map category to a stable picsum seed for consistent placeholder images
+            $imageSeeds = [
+                'smartphones' => 180, 'laptops' => 119, 'electronics' => 48,
+                'shoes' => 349, 'fashion' => 292, 'clothing' => 326,
+                'furniture' => 20, 'kitchen' => 292, 'home' => 137,
+                'skincare' => 325, 'beauty' => 356, 'hair' => 334,
+                'sports' => 416, 'fitness' => 247, 'outdoors' => 15,
+                'beverages' => 431, 'groceries' => 429, 'snacks' => 493,
+            ];
+            $imgSeed = $imageSeeds[$data['category']] ?? (100 + ($category?->id ?? 0));
+            $thumbnailUrl = "https://picsum.photos/seed/{$data['category']}{$imgSeed}/400/400";
+
+            $existing = Product::where('slug', $slug)->first();
+            if ($existing && !$existing->thumbnail) {
+                $existing->update(['thumbnail' => $thumbnailUrl]);
+            }
+
             Product::firstOrCreate(
                 ['slug' => $slug],
                 [
@@ -382,6 +399,7 @@ class ProductSeeder extends Seeder
                     'short_description' => $data['short'],
                     'description'       => '<p>' . $data['short'] . '</p>',
                     'specifications'    => $data['specs'],
+                    'thumbnail'         => $thumbnailUrl,
                     'status'            => 'active',
                     'is_featured'       => $data['featured'] ?? false,
                     'is_new_arrival'    => $data['new_arrival'] ?? false,

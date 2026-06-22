@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Dimensions, Alert, Image, Share,
+  ActivityIndicator, Dimensions, Image, Share,
   FlatList, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+import AppAlert from '../../components/AppAlert';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SIZES } from '../../constants';
 import { productsApi } from '../../api/products';
@@ -117,8 +118,15 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [related, setRelated] = useState<Product[]>([]);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{ icon: string; iconColor: string; title: string; message: string }>({ icon: 'checkmark-circle', iconColor: '', title: '', message: '' });
   const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+
+  const showAlert = (icon: string, iconColor: string, title: string, message: string) => {
+    setAlertProps({ icon, iconColor, title, message });
+    setAlertVisible(true);
+  };
 
   const loadProduct = useCallback(async () => {
     try {
@@ -127,7 +135,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       setProduct(p);
       addToRecentlyViewed(p);
     } catch {
-      Alert.alert('Error', 'Product not found');
+      showAlert('warning-outline', COLORS.danger, 'Not Found', 'Product not found');
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -177,9 +185,9 @@ export default function ProductDetailScreen({ route, navigation }: any) {
     setAddingToCart(true);
     try {
       await addItem(product.id, quantity, selectedVariant?.id);
-      Alert.alert('Added to Cart', `${product.name} added successfully!`);
+      showAlert('checkmark-circle', COLORS.success, 'Added to Cart', `${product.name} added successfully!`);
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not add to cart');
+      showAlert('close-circle', COLORS.danger, 'Error', e?.response?.data?.message || 'Could not add to cart');
     } finally {
       setAddingToCart(false);
     }
@@ -481,6 +489,15 @@ export default function ProductDetailScreen({ route, navigation }: any) {
           <View style={{ height: 120 }} />
         </View>
       </ScrollView>
+
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        onDismiss={() => setAlertVisible(false)}
+      />
 
       {/* ── Bottom Action Buttons ── */}
       <View style={styles.bottomActions}>

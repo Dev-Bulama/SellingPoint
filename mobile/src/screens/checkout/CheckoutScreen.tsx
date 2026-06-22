@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput, Modal,
+  ActivityIndicator, TextInput, Modal,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Paystack from 'react-native-paystack-webview';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
@@ -14,6 +15,7 @@ import { formatCurrency, getErrorMessage } from '../../utils/currency';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import apiClient from '../../api/client';
+import AppAlert from '../../components/AppAlert';
 
 export default function CheckoutScreen({ navigation }: any) {
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -30,24 +32,37 @@ export default function CheckoutScreen({ navigation }: any) {
   const [paystackKey, setPaystackKey] = useState('');
   const [pendingOrderNumber, setPendingOrderNumber] = useState('');
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[];
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
   const { cart, fetchCart } = useCartStore();
   const { user } = useAuthStore();
 
-  useEffect(() => {
-    fetchCart();
-    loadAddresses();
-    loadPaystackKey();
-  }, []);
+  const showAlert = (
+    icon: string, iconColor: string, title: string, message: string,
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[],
+  ) => {
+    setAlertProps({ icon, iconColor, title, message, buttons });
+    setAlertVisible(true);
+  };
 
-  const loadAddresses = async () => {
+  const loadAddresses = useCallback(async () => {
     try {
       const res = await apiClient.get('/addresses');
       const addrs: Address[] = res.data.data;
       setAddresses(addrs);
-      const def = addrs.find(a => a.is_default) || addrs[0];
-      if (def) setSelectedAddress(def);
+      setSelectedAddress(prev => {
+        if (prev) {
+          const stillExists = addrs.find(a => a.id === prev.id);
+          if (stillExists) return stillExists;
+        }
+        return addrs.find(a => a.is_default) || addrs[0] || null;
+      });
     } catch {} finally { setLoadingAddresses(false); }
-  };
+  }, []);
 
   const loadPaystackKey = async () => {
     try {
@@ -57,22 +72,40 @@ export default function CheckoutScreen({ navigation }: any) {
     } catch {}
   };
 
+  useEffect(() => {
+    fetchCart();
+    loadPaystackKey();
+  }, []);
+
+  // Reload addresses every time the screen comes into focus (e.g. after adding new address)
+  useFocusEffect(
+    useCallback(() => {
+      loadAddresses();
+    }, [loadAddresses]),
+  );
+
   const handleValidateCoupon = async () => {
     if (!couponCode) return;
     setIsValidatingCoupon(true);
     try {
       const res = await ordersApi.validateCoupon(couponCode.toUpperCase(), cart?.total ?? 0);
       setDiscount(res.data.discount);
-      Alert.alert('Coupon Applied', `You saved ${formatCurrency(res.data.discount)}!`);
+      showAlert('pricetag', COLORS.success, 'Coupon Applied', `You saved ${formatCurrency(res.data.discount)}!`);
     } catch (e) {
-      Alert.alert('Invalid Coupon', getErrorMessage(e));
+      showAlert('close-circle', COLORS.danger, 'Invalid Coupon', getErrorMessage(e));
       setDiscount(0);
     } finally { setIsValidatingCoupon(false); }
   };
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddress) { Alert.alert('Error', 'Please select a delivery address'); return; }
-    if (!cart || cart.items.length === 0) { Alert.alert('Error', 'Your cart is empty'); return; }
+    if (!selectedAddress) {
+      showAlert('location-outline', COLORS.primary, 'No Address', 'Please select a delivery address.');
+      return;
+    }
+    if (!cart || cart.items.length === 0) {
+      showAlert('cart-outline', COLORS.danger, 'Empty Cart', 'Your cart is empty.');
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await ordersApi.checkout({
@@ -85,7 +118,7 @@ export default function CheckoutScreen({ navigation }: any) {
 
       if (paymentMethod === 'paystack') {
         if (!paystackKey) {
-          Alert.alert('Error', 'Payment is not configured. Please contact support.');
+          showAlert('warning-outline', COLORS.danger, 'Payment Error', 'Payment is not configured. Please contact support.');
           setIsLoading(false);
           return;
         }
@@ -97,7 +130,7 @@ export default function CheckoutScreen({ navigation }: any) {
         navigation.replace('OrderSuccess', { orderNumber: order.order_number });
       }
     } catch (e) {
-      Alert.alert('Error', getErrorMessage(e));
+      showAlert('close-circle', COLORS.danger, 'Order Failed', getErrorMessage(e));
     } finally { setIsLoading(false); }
   };
 
@@ -108,13 +141,13 @@ export default function CheckoutScreen({ navigation }: any) {
       await paymentsApi.verify(paystackRef);
       navigation.replace('OrderSuccess', { orderNumber: pendingOrderNumber });
     } catch (e) {
-      Alert.alert('Verification Error', 'Payment made but could not verify. Please contact support with reference: ' + paystackRef);
+      showAlert('warning-outline', COLORS.danger, 'Verification Error', 'Payment made but could not verify. Please contact support with reference: ' + paystackRef);
     } finally { setIsLoading(false); }
   };
 
   const handlePaystackCancel = () => {
     setShowPaystack(false);
-    Alert.alert('Payment Cancelled', 'Your order was created but payment was not completed. You can retry from your Orders page.');
+    showAlert('information-circle', COLORS.primary, 'Payment Cancelled', 'Your order was created but payment was not completed. You can retry from your Orders page.');
   };
 
   const subtotal = cart?.total ?? 0;
@@ -124,6 +157,16 @@ export default function CheckoutScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
           <IonIcon name="arrow-back" size={20} color={COLORS.primary} />
@@ -138,25 +181,31 @@ export default function CheckoutScreen({ navigation }: any) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Delivery Address</Text>
           {addresses.length === 0 ? (
-            <TouchableOpacity style={styles.addAddrBtn} onPress={() => navigation.navigate('ProfileTab', { screen: 'Addresses' })}>
+            <TouchableOpacity style={styles.addAddrBtn} onPress={() => navigation.navigate('AddAddress')}>
               <Text style={styles.addAddrBtnText}>+ Add Delivery Address</Text>
             </TouchableOpacity>
           ) : (
-            addresses.map(addr => (
-              <TouchableOpacity
-                key={addr.id}
-                style={[styles.addressCard, selectedAddress?.id === addr.id && styles.selectedCard]}
-                onPress={() => setSelectedAddress(addr)}
-              >
-                <View style={styles.radioOuter}>
-                  {selectedAddress?.id === addr.id && <View style={styles.radioInner} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.addrName}>{addr.full_name} · {addr.phone}</Text>
-                  <Text style={styles.addrText}>{addr.address_line1}, {addr.city}, {addr.state}</Text>
-                </View>
+            <>
+              {addresses.map(addr => (
+                <TouchableOpacity
+                  key={addr.id}
+                  style={[styles.addressCard, selectedAddress?.id === addr.id && styles.selectedCard]}
+                  onPress={() => setSelectedAddress(addr)}
+                >
+                  <View style={styles.radioOuter}>
+                    {selectedAddress?.id === addr.id && <View style={styles.radioInner} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.addrName}>{addr.full_name} · {addr.phone}</Text>
+                    <Text style={styles.addrText}>{addr.address_line1}, {addr.city}, {addr.state}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.addMoreBtn} onPress={() => navigation.navigate('AddAddress')}>
+                <IonIcon name="add-circle-outline" size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.addMoreText}>Add New Address</Text>
               </TouchableOpacity>
-            ))
+            </>
           )}
         </View>
 
@@ -298,6 +347,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, marginBottom: 12 },
   addAddrBtn: { borderWidth: 2, borderColor: COLORS.primary, borderStyle: 'dashed', borderRadius: SIZES.borderRadius, padding: 16, alignItems: 'center' },
   addAddrBtnText: { color: COLORS.primary, fontWeight: '600' },
+  addMoreBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4, marginTop: 4 },
+  addMoreText: { color: COLORS.primary, fontSize: 14, fontWeight: '600' },
   addressCard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: COLORS.border },
   selectedCard: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '08' },
   radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', marginRight: 12, marginTop: 2 },
