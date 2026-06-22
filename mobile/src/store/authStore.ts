@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types';
 import { authApi } from '../api/auth';
+import { setAuthToken } from '../api/client';
 
 interface AuthState {
   user: User | null;
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = await AsyncStorage.getItem('auth_token');
       const userStr = await AsyncStorage.getItem('user');
       if (token && userStr) {
+        await setAuthToken(token); // warm up in-memory cache
         set({ token, user: JSON.parse(userStr), isAuthenticated: true });
         // Refresh user data from server (silently fail if offline or token expired)
         try {
@@ -43,7 +45,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await authApi.login(email, password);
       const { token, user } = res.data;
-      await AsyncStorage.setItem('auth_token', token);
+      await setAuthToken(token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       set({ token, user, isAuthenticated: true });
     } finally {
@@ -56,7 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await authApi.register(data);
       const { token, user } = res.data;
-      await AsyncStorage.setItem('auth_token', token);
+      await setAuthToken(token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       set({ token, user, isAuthenticated: true });
     } finally {
@@ -66,7 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try { await authApi.logout(); } catch {}
-    await AsyncStorage.removeItem('auth_token');
+    await setAuthToken(null);
     await AsyncStorage.removeItem('user');
     set({ user: null, token: null, isAuthenticated: false });
   },

@@ -294,25 +294,37 @@ export default function HomeScreen({ navigation }: any) {
   }, []);
 
   const loadData = useCallback(async () => {
-    try {
-      const [bannersRes, featuredRes, newArrRes, flashRes, catsRes, cmsFlashRes] = await Promise.all([
-        cmsApi.banners('slider').catch(() => ({ data: { data: [] } })),
-        productsApi.featured().catch(() => ({ data: { data: [] } })),
-        productsApi.newArrivals().catch(() => ({ data: { data: [] } })),
-        productsApi.flashSales().catch(() => ({ data: { data: [] } })),
-        productsApi.categories().catch(() => ({ data: { data: [] } })),
-        cmsApi.flashSales().catch(() => ({ data: { data: [] } })),
-      ]);
-      setBanners(bannersRes.data.data);
-      setFeatured(featuredRes.data.data);
-      setNewArrivals(newArrRes.data.data);
-      setFlashSales(flashRes.data.data);
-      setCategories(catsRes.data.data);
-      const cmsFlash = cmsFlashRes.data.data;
-      if (Array.isArray(cmsFlash) && cmsFlash.length > 0 && cmsFlash[0].ends_at) {
-        setFlashSaleEnd(new Date(cmsFlash[0].ends_at));
-      }
-    } catch {}
+    // Fire all requests in parallel; update state as each resolves so content appears progressively
+    const safe = (p: Promise<any>, fallback: any) => p.catch(() => fallback);
+
+    cmsApi.banners('slider')
+      .then(r => setBanners(r.data.data))
+      .catch(() => {});
+
+    productsApi.categories()
+      .then(r => setCategories(r.data.data))
+      .catch(() => {});
+
+    productsApi.featured()
+      .then(r => setFeatured(r.data.data))
+      .catch(() => {});
+
+    productsApi.flashSales()
+      .then(r => setFlashSales(r.data.data))
+      .catch(() => {});
+
+    productsApi.newArrivals()
+      .then(r => setNewArrivals(r.data.data))
+      .catch(() => {});
+
+    cmsApi.flashSales()
+      .then(r => {
+        const list = r.data.data;
+        if (Array.isArray(list) && list.length > 0 && list[0].ends_at) {
+          setFlashSaleEnd(new Date(list[0].ends_at));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Dimensions, Image, Share,
-  FlatList, NativeSyntheticEvent, NativeScrollEvent,
+  ActivityIndicator, Dimensions, Image, Share, TextInput, Modal,
+  NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import AppAlert from '../../components/AppAlert';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -120,12 +120,47 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const [related, setRelated] = useState<Product[]>([]);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState<{ icon: string; iconColor: string; title: string; message: string }>({ icon: 'checkmark-circle', iconColor: '', title: '', message: '' });
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewBody, setReviewBody] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
   const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
   const showAlert = (icon: string, iconColor: string, title: string, message: string) => {
     setAlertProps({ icon, iconColor, title, message });
     setAlertVisible(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) {
+      showAlert('star-outline', COLORS.primary, 'Select Rating', 'Please tap a star to rate this product.');
+      return;
+    }
+    if (!reviewBody.trim()) {
+      showAlert('create-outline', COLORS.primary, 'Write a Review', 'Please write a few words about this product.');
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await productsApi.storeReview({
+        product_id: product!.id,
+        rating: reviewRating,
+        title: reviewTitle.trim() || undefined,
+        body: reviewBody.trim(),
+      });
+      setShowReviewModal(false);
+      setReviewRating(0);
+      setReviewTitle('');
+      setReviewBody('');
+      showAlert('checkmark-circle', COLORS.success, 'Review Submitted', 'Your review has been submitted for approval. Thank you!');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Could not submit review. Please try again.';
+      showAlert('close-circle', COLORS.danger, 'Error', msg);
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   const loadProduct = useCallback(async () => {
@@ -455,6 +490,13 @@ export default function ProductDetailScreen({ route, navigation }: any) {
               </View>
             </View>
 
+            {isAuthenticated && (
+              <TouchableOpacity style={styles.writeReviewBtn} onPress={() => setShowReviewModal(true)}>
+                <IonIcon name="create-outline" size={16} color={COLORS.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.writeReviewText}>Write a Review</Text>
+              </TouchableOpacity>
+            )}
+
             {reviewsLoading ? (
               <ActivityIndicator color={COLORS.primary} style={{ marginTop: 12 }} />
             ) : reviews.length > 0 ? (
@@ -498,6 +540,66 @@ export default function ProductDetailScreen({ route, navigation }: any) {
         message={alertProps.message}
         onDismiss={() => setAlertVisible(false)}
       />
+
+      {/* Write Review Modal */}
+      <Modal visible={showReviewModal} animationType="slide" transparent statusBarTranslucent onRequestClose={() => setShowReviewModal(false)}>
+        <View style={reviewModalStyles.overlay}>
+          <View style={reviewModalStyles.sheet}>
+            <View style={reviewModalStyles.handle} />
+            <View style={reviewModalStyles.header}>
+              <Text style={reviewModalStyles.title}>Write a Review</Text>
+              <TouchableOpacity onPress={() => setShowReviewModal(false)} style={{ padding: 4 }}>
+                <IonIcon name="close" size={22} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={reviewModalStyles.productName} numberOfLines={1}>{product.name}</Text>
+
+            {/* Star rating picker */}
+            <Text style={reviewModalStyles.label}>Your Rating *</Text>
+            <View style={reviewModalStyles.starsRow}>
+              {[1, 2, 3, 4, 5].map(i => (
+                <TouchableOpacity key={i} onPress={() => setReviewRating(i)} style={{ padding: 4 }}>
+                  <IonIcon name={i <= reviewRating ? 'star' : 'star-outline'} size={36} color={i <= reviewRating ? '#F39C12' : COLORS.border} />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={reviewModalStyles.ratingLabel}>
+              {reviewRating === 0 ? 'Tap to rate' : ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewRating]}
+            </Text>
+
+            <Text style={reviewModalStyles.label}>Review Title (optional)</Text>
+            <TextInput
+              style={reviewModalStyles.input}
+              placeholder="Summarise your experience"
+              value={reviewTitle}
+              onChangeText={setReviewTitle}
+              maxLength={100}
+            />
+
+            <Text style={reviewModalStyles.label}>Your Review *</Text>
+            <TextInput
+              style={[reviewModalStyles.input, { height: 100, textAlignVertical: 'top' }]}
+              placeholder="Tell others what you think about this product..."
+              value={reviewBody}
+              onChangeText={setReviewBody}
+              multiline
+              numberOfLines={4}
+              maxLength={1000}
+            />
+
+            <TouchableOpacity
+              style={[reviewModalStyles.submitBtn, submittingReview && { opacity: 0.7 }]}
+              onPress={handleSubmitReview}
+              disabled={submittingReview}
+            >
+              {submittingReview
+                ? <ActivityIndicator color={COLORS.white} />
+                : <Text style={reviewModalStyles.submitText}>Submit Review</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Bottom Action Buttons ── */}
       <View style={styles.bottomActions}>
@@ -615,6 +717,12 @@ const styles = StyleSheet.create({
   avgRatingBox: { alignItems: 'center' },
   avgRatingNum: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
   noReviews: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', marginTop: 12 },
+  writeReviewBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: SIZES.borderRadius,
+    paddingVertical: 10, paddingHorizontal: 16, marginBottom: 16, alignSelf: 'flex-start',
+  },
+  writeReviewText: { color: COLORS.primary, fontSize: 14, fontWeight: '600' },
 
   // Related
   relatedCard: {
@@ -649,4 +757,35 @@ const styles = StyleSheet.create({
   },
   buyBtnText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
   disabledBtn: { opacity: 0.45 },
+});
+
+const reviewModalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 24, paddingBottom: 40,
+  },
+  handle: {
+    width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border,
+    alignSelf: 'center', marginBottom: 16,
+  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  title: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
+  productName: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 20 },
+  label: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginBottom: 8 },
+  starsRow: { flexDirection: 'row', marginBottom: 6 },
+  ratingLabel: { fontSize: 13, color: COLORS.primary, fontWeight: '600', marginBottom: 20, minHeight: 18 },
+  input: {
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.borderRadiusSm,
+    padding: 12, fontSize: 14, color: COLORS.text,
+    backgroundColor: COLORS.grayLight, marginBottom: 16,
+  },
+  submitBtn: {
+    backgroundColor: COLORS.primary, borderRadius: SIZES.borderRadius,
+    paddingVertical: 15, alignItems: 'center', marginTop: 4,
+  },
+  submitText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
 });

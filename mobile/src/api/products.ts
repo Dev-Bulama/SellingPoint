@@ -33,6 +33,9 @@ export const productsApi = {
       { params: { page } }
     ),
 
+  storeReview: (data: { product_id: number; rating: number; title?: string; body: string }) =>
+    apiClient.post('/reviews', data),
+
   recentlyViewed: () => apiClient.get<{ data: Product[] }>('/recently-viewed'),
 
   categories: () => apiClient.get<{ data: Category[] }>('/categories'),
