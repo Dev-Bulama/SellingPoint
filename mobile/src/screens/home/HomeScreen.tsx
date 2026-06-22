@@ -11,6 +11,7 @@ import { Product, Category, Banner } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
@@ -181,7 +182,11 @@ function AutoBannerSlider({ banners, onPress }: { banners: Banner[]; onPress: (b
 // ---------------------------------------------------------------------------
 // ProductCard
 // ---------------------------------------------------------------------------
-function ProductCard({ product, onPress }: { product: Product; onPress: () => void }) {
+function ProductCard({
+  product, onPress, onAddToCart,
+}: {
+  product: Product; onPress: () => void; onAddToCart?: () => void;
+}) {
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.88}>
       <View style={styles.productImageBox}>
@@ -196,6 +201,11 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>-{product.discount_percentage}%</Text>
           </View>
+        )}
+        {onAddToCart && (
+          <TouchableOpacity style={styles.cartFab} onPress={(e) => { e.stopPropagation(); onAddToCart(); }} activeOpacity={0.85}>
+            <IonIcon name="cart-outline" size={16} color={COLORS.white} />
+          </TouchableOpacity>
         )}
       </View>
       <View style={styles.productInfo}>
@@ -281,8 +291,9 @@ export default function HomeScreen({ navigation }: any) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const { fetchCart } = useCartStore();
+  const { fetchCart, cart } = useCartStore();
   const { user } = useAuthStore();
+  const { unreadCount, fetchUnreadCount } = useNotificationStore();
 
   const firstName = user?.name?.trim().split(' ')[0] ?? '';
 
@@ -331,6 +342,7 @@ export default function HomeScreen({ navigation }: any) {
     loadData();
     fetchCart();
     loadRecentlyViewed();
+    fetchUnreadCount();
   }, []);
 
   const onRefresh = async () => {
@@ -353,7 +365,14 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.subGreeting}>What are you shopping for today?</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.notifBtn}>
-          <IonIcon name="notifications-outline" size={22} color={COLORS.text} />
+          <View>
+            <IonIcon name="notifications-outline" size={22} color={COLORS.text} />
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -414,7 +433,7 @@ export default function HomeScreen({ navigation }: any) {
               data={flashSales.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
             />
           </View>
         )}
@@ -427,7 +446,7 @@ export default function HomeScreen({ navigation }: any) {
               data={featured.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
             />
           </View>
         )}
@@ -440,7 +459,7 @@ export default function HomeScreen({ navigation }: any) {
               data={newArrivals.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
             />
           </View>
         )}
@@ -453,7 +472,7 @@ export default function HomeScreen({ navigation }: any) {
               data={recentlyViewed} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
             />
           </View>
         )}
@@ -475,6 +494,12 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   subGreeting: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
   notifBtn: { padding: 8 },
+  notifBadge: {
+    position: 'absolute', top: -4, right: -6,
+    backgroundColor: COLORS.danger, borderRadius: 9,
+    minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
+  },
+  notifBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
 
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
@@ -562,6 +587,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2,
   },
   discountText: { color: COLORS.white, fontSize: 11, fontWeight: 'bold' },
+  cartFab: {
+    position: 'absolute', bottom: 8, right: 8,
+    backgroundColor: COLORS.primary, borderRadius: 16,
+    width: 32, height: 32, alignItems: 'center', justifyContent: 'center',
+    elevation: 3,
+  },
   productInfo: { padding: 10 },
   productName: { fontSize: 13, fontWeight: 'bold', color: COLORS.text, marginBottom: 4, lineHeight: 18 },
   priceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },

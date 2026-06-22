@@ -45,7 +45,8 @@ class Product extends Model
     {
         if (!$this->thumbnail) return null;
         if (str_starts_with($this->thumbnail, 'http')) return $this->thumbnail;
-        return Storage::disk('public')->url($this->thumbnail);
+        $base = request()->getSchemeAndHttpHost();
+        return $base . '/storage/' . ltrim($this->thumbnail, '/');
     }
 
     public function getEffectivePriceAttribute(): float

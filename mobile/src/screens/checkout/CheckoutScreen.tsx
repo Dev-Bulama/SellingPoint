@@ -40,6 +40,10 @@ export default function CheckoutScreen({ navigation }: any) {
   const { cart, fetchCart } = useCartStore();
   const { user } = useAuthStore();
 
+  // Computed here so handlePlaceOrder can reference them
+  const subtotal = cart?.total ?? 0;
+  const total = Math.max(0, subtotal - discount);
+
   const showAlert = (
     icon: string, iconColor: string, title: string, message: string,
     buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[],
@@ -136,9 +140,6 @@ export default function CheckoutScreen({ navigation }: any) {
       showAlert('close-circle', COLORS.danger, 'Order Failed', getErrorMessage(e));
     } finally { setIsLoading(false); }
   };
-
-  const subtotal = cart?.total ?? 0;
-  const total = Math.max(0, subtotal - discount);
 
   if (loadingAddresses) return <View style={styles.loading}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 

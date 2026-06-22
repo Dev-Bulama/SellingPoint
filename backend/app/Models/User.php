@@ -47,6 +47,9 @@ class User extends Authenticatable implements FilamentUser
 
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar ? asset('storage/' . $this->avatar) : null;
+        if (!$this->avatar) return null;
+        if (str_starts_with($this->avatar, 'http')) return $this->avatar;
+        $base = request()->getSchemeAndHttpHost();
+        return $base . '/storage/' . ltrim($this->avatar, '/');
     }
 }

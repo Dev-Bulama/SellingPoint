@@ -17,9 +17,7 @@ class CmsController extends Controller
     public function banners(Request $request): JsonResponse
     {
         $type    = $request->type ?? 'slider';
-        $banners = \Illuminate\Support\Facades\Cache::remember("api:banners:{$type}", 600, fn() =>
-            Banner::active()->where('type', $type)->orderBy('sort_order')->get()
-        );
+        $banners = Banner::active()->where('type', $type)->orderBy('sort_order')->get();
         return response()->json(['data' => BannerResource::collection($banners)]);
     }
 
@@ -49,6 +47,12 @@ class CmsController extends Controller
         $settings = [];
         foreach ($keys as $key) {
             $settings[$key] = Setting::get($key);
+        }
+
+        // Fix app_logo URL to use request host so mobile devices can load it
+        if (!empty($settings['app_logo']) && !str_starts_with($settings['app_logo'], 'http')) {
+            $base = request()->getSchemeAndHttpHost();
+            $settings['app_logo'] = $base . '/storage/' . ltrim($settings['app_logo'], '/');
         }
 
         // Fall back to .env for paystack_public_key if not set in DB

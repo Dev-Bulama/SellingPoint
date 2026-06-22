@@ -27,6 +27,9 @@ class Category extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image ? Storage::disk('public')->url($this->image) : null;
+        if (!$this->image) return null;
+        if (str_starts_with($this->image, 'http')) return $this->image;
+        $base = request()->getSchemeAndHttpHost();
+        return $base . '/storage/' . ltrim($this->image, '/');
     }
 }
