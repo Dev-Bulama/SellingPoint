@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, TextInput, Modal,
+  ActivityIndicator, TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import Paystack from 'react-native-paystack-webview';
+import { usePaystack } from 'react-native-paystack-webview';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
 import { paymentsApi } from '../../api/payments';
-import { cmsApi } from '../../api/cms';
 import { Address } from '../../types';
 import { COLORS, SIZES } from '../../constants';
 import { formatCurrency, getErrorMessage } from '../../utils/currency';
@@ -27,10 +26,10 @@ export default function CheckoutScreen({ navigation }: any) {
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [orderNotes, setOrderNotes] = useState('');
-  const [showPaystack, setShowPaystack] = useState(false);
-  const [paystackRef, setPaystackRef] = useState('');
-  const [paystackKey, setPaystackKey] = useState('');
-  const [pendingOrderNumber, setPendingOrderNumber] = useState('');
+  const paystackRefRef = useRef('');
+  const pendingOrderRef = useRef('');
+
+  const { popup } = usePaystack();
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState<{
@@ -64,17 +63,8 @@ export default function CheckoutScreen({ navigation }: any) {
     } catch {} finally { setLoadingAddresses(false); }
   }, []);
 
-  const loadPaystackKey = async () => {
-    try {
-      const res = await cmsApi.settings();
-      const key = res.data.data?.paystack_public_key;
-      if (key) setPaystackKey(key);
-    } catch {}
-  };
-
   useEffect(() => {
     fetchCart();
-    loadPaystackKey();
   }, []);
 
   // Reload addresses every time the screen comes into focus (e.g. after adding new address)
@@ -117,37 +107,34 @@ export default function CheckoutScreen({ navigation }: any) {
       const order = res.data.data;
 
       if (paymentMethod === 'paystack') {
-        if (!paystackKey) {
-          showAlert('warning-outline', COLORS.danger, 'Payment Error', 'Payment is not configured. Please contact support.');
-          setIsLoading(false);
-          return;
-        }
         const payRes = await paymentsApi.initialize(order.order_number);
-        setPendingOrderNumber(order.order_number);
-        setPaystackRef(payRes.data.reference);
-        setShowPaystack(true);
+        pendingOrderRef.current = order.order_number;
+        paystackRefRef.current = payRes.data.reference;
+        setIsLoading(false);
+        popup.checkout({
+          email: user?.email ?? '',
+          amount: total * 100, // Paystack expects kobo
+          reference: payRes.data.reference,
+          onSuccess: async () => {
+            setIsLoading(true);
+            try {
+              await paymentsApi.verify(paystackRefRef.current);
+              navigation.replace('OrderSuccess', { orderNumber: pendingOrderRef.current });
+            } catch {
+              showAlert('warning-outline', COLORS.danger, 'Verification Error', 'Payment made but could not verify. Please contact support with reference: ' + paystackRefRef.current);
+            } finally { setIsLoading(false); }
+          },
+          onCancel: () => {
+            showAlert('information-circle', COLORS.primary, 'Payment Cancelled', 'Your order was created but payment was not completed. You can retry from your Orders page.');
+          },
+        });
+        return;
       } else {
         navigation.replace('OrderSuccess', { orderNumber: order.order_number });
       }
     } catch (e) {
       showAlert('close-circle', COLORS.danger, 'Order Failed', getErrorMessage(e));
     } finally { setIsLoading(false); }
-  };
-
-  const handlePaystackSuccess = async (data: any) => {
-    setShowPaystack(false);
-    setIsLoading(true);
-    try {
-      await paymentsApi.verify(paystackRef);
-      navigation.replace('OrderSuccess', { orderNumber: pendingOrderNumber });
-    } catch (e) {
-      showAlert('warning-outline', COLORS.danger, 'Verification Error', 'Payment made but could not verify. Please contact support with reference: ' + paystackRef);
-    } finally { setIsLoading(false); }
-  };
-
-  const handlePaystackCancel = () => {
-    setShowPaystack(false);
-    showAlert('information-circle', COLORS.primary, 'Payment Cancelled', 'Your order was created but payment was not completed. You can retry from your Orders page.');
   };
 
   const subtotal = cart?.total ?? 0;
@@ -308,30 +295,6 @@ export default function CheckoutScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Paystack WebView payment sheet */}
-      {showPaystack && paystackKey && (
-        <Modal visible animationType="slide" onRequestClose={handlePaystackCancel}>
-          <View style={styles.paystackContainer}>
-            <View style={styles.paystackHeader}>
-              <TouchableOpacity onPress={handlePaystackCancel} style={styles.paystackClose}>
-                <IonIcon name="close" size={22} color={COLORS.text} />
-              </TouchableOpacity>
-              <Text style={styles.paystackTitle}>Secure Payment</Text>
-              <View style={{ width: 40 }} />
-            </View>
-            <Paystack
-              paystackKey={paystackKey}
-              amount={total}
-              billingEmail={user?.email ?? ''}
-              billingName={user?.name ?? ''}
-              activityIndicatorColor={COLORS.primary}
-              onCancel={handlePaystackCancel}
-              onSuccess={handlePaystackSuccess}
-              autoStart
-            />
-          </View>
-        </Modal>
-      )}
     </View>
   );
 }
@@ -371,12 +334,4 @@ const styles = StyleSheet.create({
   footer: { backgroundColor: COLORS.white, padding: SIZES.screenPadding, paddingBottom: 32, borderTopWidth: 1, borderTopColor: COLORS.border },
   placeOrderBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.borderRadius, paddingVertical: 16, alignItems: 'center' },
   placeOrderText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
-  paystackContainer: { flex: 1, backgroundColor: COLORS.white },
-  paystackHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  paystackClose: { padding: 4 },
-  paystackTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
 });
