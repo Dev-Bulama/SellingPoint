@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../constants';
@@ -17,9 +17,15 @@ type Props = {
   message?: string;
   buttons?: AlertButton[];
   onDismiss?: () => void;
+  autoDismissMs?: number; // if set, alert closes itself after this many milliseconds
 };
 
-export default function AppAlert({ visible, icon, iconColor, title, message, buttons, onDismiss }: Props) {
+export default function AppAlert({ visible, icon, iconColor, title, message, buttons, onDismiss, autoDismissMs }: Props) {
+  useEffect(() => {
+    if (!visible || !autoDismissMs || !onDismiss) return;
+    const t = setTimeout(onDismiss, autoDismissMs);
+    return () => clearTimeout(t);
+  }, [visible, autoDismissMs, onDismiss]);
   const resolvedIcon = icon || 'information-circle';
   const resolvedColor = iconColor || COLORS.primary;
   const resolvedButtons: AlertButton[] = buttons && buttons.length > 0

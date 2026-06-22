@@ -119,7 +119,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [related, setRelated] = useState<Product[]>([]);
   const [alertVisible, setAlertVisible] = useState(false);
-  const [alertProps, setAlertProps] = useState<{ icon: string; iconColor: string; title: string; message: string }>({ icon: 'checkmark-circle', iconColor: '', title: '', message: '' });
+  const [alertProps, setAlertProps] = useState<{ icon: string; iconColor: string; title: string; message: string; autoDismissMs?: number }>({ icon: 'checkmark-circle', iconColor: '', title: '', message: '' });
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewTitle, setReviewTitle] = useState('');
@@ -128,8 +128,8 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
-  const showAlert = (icon: string, iconColor: string, title: string, message: string) => {
-    setAlertProps({ icon, iconColor, title, message });
+  const showAlert = (icon: string, iconColor: string, title: string, message: string, autoDismissMs?: number) => {
+    setAlertProps({ icon, iconColor, title, message, autoDismissMs });
     setAlertVisible(true);
   };
 
@@ -217,10 +217,11 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       navigation.navigate('Auth');
       return;
     }
+    // Show confirmation immediately — don't wait for the network
+    showAlert('checkmark-circle', COLORS.success, 'Added to Cart', `${product.name} added successfully!`, 2500);
     setAddingToCart(true);
     try {
       await addItem(product.id, quantity, selectedVariant?.id);
-      showAlert('checkmark-circle', COLORS.success, 'Added to Cart', `${product.name} added successfully!`);
     } catch (e: any) {
       showAlert('close-circle', COLORS.danger, 'Error', e?.response?.data?.message || 'Could not add to cart');
     } finally {
@@ -538,6 +539,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
         iconColor={alertProps.iconColor}
         title={alertProps.title}
         message={alertProps.message}
+        autoDismissMs={alertProps.autoDismissMs}
         onDismiss={() => setAlertVisible(false)}
       />
 
