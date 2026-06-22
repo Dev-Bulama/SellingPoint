@@ -6,6 +6,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import MaintenanceScreen from './src/screens/common/MaintenanceScreen';
 import { COLORS } from './src/constants';
 import { cmsApi } from './src/api/cms';
+import { setBaseUrl } from './src/api/client';
 
 export default function App() {
   const [paystackKey, setPaystackKey] = useState<string | null>(null);
@@ -17,6 +18,8 @@ export default function App() {
     cmsApi.settings()
       .then(r => {
         const d = r.data.data ?? {};
+        // Apply admin-configured API URL for all subsequent calls
+        if (d.active_api_url) setBaseUrl(d.active_api_url);
         setPaystackKey(d.paystack_public_key || 'pk_test_placeholder');
         setMaintenance(!!d.maintenance_mode);
         if (d.app_name) setAppName(d.app_name);

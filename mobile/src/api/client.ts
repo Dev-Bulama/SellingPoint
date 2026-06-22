@@ -29,6 +29,14 @@ const apiClient = axios.create({
   },
 });
 
+// Called once on app startup after admin settings are fetched.
+// Switches all subsequent API calls to the admin-configured URL.
+export function setBaseUrl(url: string) {
+  if (url && url !== apiClient.defaults.baseURL) {
+    apiClient.defaults.baseURL = url;
+  }
+}
+
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     const token = await getToken();
