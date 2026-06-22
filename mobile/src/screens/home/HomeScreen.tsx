@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  FlatList, RefreshControl, Dimensions, Image,
+  FlatList, RefreshControl, Dimensions, Image, ActivityIndicator, Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SIZES } from '../../constants';
@@ -72,9 +72,11 @@ const timerStyles = StyleSheet.create({
 // ---------------------------------------------------------------------------
 function BannerItem({ banner }: { banner: Banner }) {
   const [imgFailed, setImgFailed] = useState(false);
+  const bgColor = banner.bg_color || COLORS.primary;
+
   if (!banner.image_url || imgFailed) {
     return (
-      <View style={[styles.bannerBg, { backgroundColor: banner.bg_color || COLORS.primary }]}>
+      <View style={[styles.bannerBg, { backgroundColor: bgColor }]}>
         <Text style={styles.bannerTitle}>{banner.title}</Text>
         {banner.subtitle && <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>}
         {banner.button_text && (
@@ -83,13 +85,21 @@ function BannerItem({ banner }: { banner: Banner }) {
       </View>
     );
   }
+
   return (
-    <Image
-      source={{ uri: banner.image_url }}
-      style={styles.bannerImage}
-      resizeMode="cover"
-      onError={() => setImgFailed(true)}
-    />
+    <View style={{ flex: 1 }}>
+      <Image
+        source={{ uri: banner.image_url }}
+        style={styles.bannerImage}
+        resizeMode="cover"
+        onError={() => setImgFailed(true)}
+      />
+      {banner.button_text && (
+        <View style={styles.bannerOverlay}>
+          <View style={styles.bannerBtn}><Text style={styles.bannerBtnText}>{banner.button_text}</Text></View>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -185,8 +195,18 @@ function AutoBannerSlider({ banners, onPress }: { banners: Banner[]; onPress: (b
 function ProductCard({
   product, onPress, onAddToCart,
 }: {
-  product: Product; onPress: () => void; onAddToCart?: () => void;
+  product: Product; onPress: () => void; onAddToCart?: (id: number) => void;
 }) {
+  const [adding, setAdding] = useState(false);
+
+  const handleAddToCart = async (e: any) => {
+    e.stopPropagation();
+    if (adding || !onAddToCart) return;
+    setAdding(true);
+    await onAddToCart(product.id);
+    setAdding(false);
+  };
+
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.88}>
       <View style={styles.productImageBox}>
@@ -203,8 +223,10 @@ function ProductCard({
           </View>
         )}
         {onAddToCart && (
-          <TouchableOpacity style={styles.cartFab} onPress={(e) => { e.stopPropagation(); onAddToCart(); }} activeOpacity={0.85}>
-            <IonIcon name="cart-outline" size={16} color={COLORS.white} />
+          <TouchableOpacity style={styles.cartFab} onPress={handleAddToCart} activeOpacity={0.85} disabled={adding}>
+            {adding
+              ? <ActivityIndicator size="small" color={COLORS.white} />
+              : <IonIcon name="cart-outline" size={16} color={COLORS.white} />}
           </TouchableOpacity>
         )}
       </View>
@@ -291,7 +313,7 @@ export default function HomeScreen({ navigation }: any) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const { fetchCart, cart } = useCartStore();
+  const { fetchCart, cart, addItem } = useCartStore();
   const { user } = useAuthStore();
   const { unreadCount, fetchUnreadCount } = useNotificationStore();
 
@@ -393,7 +415,19 @@ export default function HomeScreen({ navigation }: any) {
         {/* ── Auto-sliding Banner ── */}
         <AutoBannerSlider
           banners={banners}
-          onPress={(b) => b.link && goToList({ title: b.title })}
+          onPress={(b) => {
+            if (!b.link) return;
+            // product links: /products/slug or product:slug
+            const productMatch = b.link.match(/(?:\/products\/|product:)([^/?#]+)/);
+            if (productMatch) { goToProduct(productMatch[1]); return; }
+            // category links: /categories/id or category:id
+            const categoryMatch = b.link.match(/(?:\/categories\/|category:)(\d+)/);
+            if (categoryMatch) { goToList({ categoryId: Number(categoryMatch[1]), title: b.title }); return; }
+            // external URL
+            if (b.link.startsWith('http')) { Linking.openURL(b.link); return; }
+            // fallback: search/list with banner title
+            goToList({ title: b.title });
+          }}
         />
 
         {/* ── Categories ── */}
@@ -433,7 +467,7 @@ export default function HomeScreen({ navigation }: any) {
               data={flashSales.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
             />
           </View>
         )}
@@ -446,7 +480,7 @@ export default function HomeScreen({ navigation }: any) {
               data={featured.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
             />
           </View>
         )}
@@ -459,7 +493,7 @@ export default function HomeScreen({ navigation }: any) {
               data={newArrivals.slice(0, 8)} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
             />
           </View>
         )}
@@ -472,7 +506,7 @@ export default function HomeScreen({ navigation }: any) {
               data={recentlyViewed} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SIZES.screenPadding }}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={() => navigation.navigate('CartTab')} />}
+              renderItem={({ item }) => <ProductCard product={item} onPress={() => goToProduct(item.slug)} onAddToCart={(id) => addItem(id, 1)} />}
             />
           </View>
         )}
@@ -527,6 +561,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20,
   },
   bannerBtnText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 13 },
+  bannerOverlay: {
+    position: 'absolute', bottom: 14, left: 24,
+  },
   dotsRow: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
     marginTop: 10, marginBottom: 4,

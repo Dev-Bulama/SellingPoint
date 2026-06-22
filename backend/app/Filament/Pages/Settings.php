@@ -42,6 +42,17 @@ class Settings extends Page
             Forms\Components\Tabs::make()->columnSpanFull()->tabs([
                 Forms\Components\Tabs\Tab::make('General')->schema([
                     Forms\Components\TextInput::make('app_name')->label('App Name')->required(),
+                    Forms\Components\FileUpload::make('app_logo')
+                        ->label('App Logo')
+                        ->image()
+                        ->disk('public')
+                        ->directory('settings')
+                        ->visibility('public')
+                        ->imageResizeMode('cover')
+                        ->imageResizeTargetWidth('512')
+                        ->imageResizeTargetHeight('512')
+                        ->helperText('Displayed on the splash screen. Recommended: 512×512 PNG.')
+                        ->columnSpanFull(),
                     Forms\Components\TextInput::make('support_email')->email(),
                     Forms\Components\TextInput::make('support_phone'),
                     Forms\Components\TextInput::make('whatsapp_number'),

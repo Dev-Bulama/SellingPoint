@@ -209,17 +209,10 @@ export default function SupportScreen({ navigation }: any) {
       return;
     }
     const cleaned = phone.replace(/\D/g, '');
-    const url = `https://wa.me/${cleaned}`;
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        showAlert('logo-whatsapp', '#25D366', 'WhatsApp Not Installed', 'Please install WhatsApp to use this feature.');
-      }
-    } catch {
+    // Use wa.me — opens WhatsApp if installed, falls back to web.whatsapp.com in browser
+    await Linking.openURL(`https://wa.me/${cleaned}`).catch(() => {
       showAlert('close-circle', COLORS.danger, 'Error', 'Could not open WhatsApp. Please try again.');
-    }
+    });
   };
 
   const openEmail = async () => {
@@ -310,13 +303,6 @@ export default function SupportScreen({ navigation }: any) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Self-Service</Text>
           <View style={styles.menuGroup}>
-            <MenuItem
-              iconName="help-circle-outline"
-              title="FAQ"
-              subtitle="Find answers to common questions"
-              onPress={() => navigation.navigate('FAQ')}
-            />
-            <View style={styles.separator} />
             <MenuItem
               iconName="alert-circle-outline"
               title="Report an Issue"
