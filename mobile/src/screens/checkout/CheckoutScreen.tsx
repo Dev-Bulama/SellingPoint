@@ -112,9 +112,8 @@ export default function CheckoutScreen({ navigation }: any) {
       const order = res.data.data;
 
       if (paymentMethod === 'paystack') {
-        // Generate a unique reference tied to this order — no backend pre-initialization
-        // needed. The PaystackProvider (with real public key from settings) opens the
-        // Paystack hosted checkout. On success we verify server-side.
+        // Use the authoritative order total from the backend (includes shipping, tax, discounts)
+        const orderTotal = order.total as number;
         const reference = `SP_${order.order_number}_${Date.now()}`;
         pendingOrderRef.current = order.order_number;
         paystackRefRef.current = reference;
@@ -122,7 +121,7 @@ export default function CheckoutScreen({ navigation }: any) {
 
         popup.checkout({
           email: user?.email ?? '',
-          amount: Math.round(total * 100), // kobo, must be integer
+          amount: Math.round(orderTotal * 100), // kobo — use backend order total, not frontend cart total
           reference,
           metadata: { order_number: order.order_number, user_id: user?.id },
           onSuccess: async () => {
