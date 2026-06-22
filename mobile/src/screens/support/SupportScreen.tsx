@@ -118,7 +118,7 @@ function ReportIssueModal({ visible, onClose, onSubmit, submitting }: ReportIssu
           <TextInput
             style={styles.descriptionInput}
             placeholder="Please describe your issue in detail so we can help you faster..."
-            placeholderTextColor={COLORS.placeholder}
+            placeholderTextColor="#BDBDBD"
             multiline
             numberOfLines={5}
             value={description}

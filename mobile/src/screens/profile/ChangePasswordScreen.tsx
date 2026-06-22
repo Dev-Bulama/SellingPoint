@@ -44,7 +44,7 @@ export default function ChangePasswordScreen({ navigation }: any) {
   const Field = ({ label, field }: any) => (
     <View style={styles.inputGroup}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput style={styles.input} secureTextEntry value={form[field as keyof typeof form]} onChangeText={(v) => update(field, v)} placeholder="••••••••" />
+      <TextInput style={styles.input} secureTextEntry value={form[field as keyof typeof form]} onChangeText={(v) => update(field, v)} placeholder="••••••••" placeholderTextColor="#BDBDBD" />
     </View>
   );
 

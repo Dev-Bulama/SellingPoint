@@ -1,44 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { COLORS } from '../../constants';
-import apiClient from '../../api/client';
 
-interface SplashSettings {
-  app_name?: string;
-  app_logo?: string;
-  app_tagline?: string;
+interface Props {
+  appName?: string;
+  appLogo?: string;
 }
 
-export default function SplashScreen() {
-  const [settings, setSettings] = useState<SplashSettings>({});
-
-  useEffect(() => {
-    apiClient.get('/cms/settings')
-      .then(res => {
-        const s = res.data.data ?? {};
-        setSettings({
-          app_name: s.app_name,
-          app_logo: s.app_logo,
-          app_tagline: s.app_tagline,
-        });
-      })
-      .catch(() => {});
-  }, []);
-
-  const appName = settings.app_name || 'Sellingpoint';
-  const tagline = settings.app_tagline || 'Shop Everything, Everywhere';
+export default function SplashScreen({ appName, appLogo }: Props) {
+  const name = appName || 'Sellingpoint';
+  const tagline = 'Shop Everything, Everywhere';
 
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        {settings.app_logo ? (
-          <Image source={{ uri: settings.app_logo }} style={styles.logoImage} resizeMode="contain" />
+        {appLogo ? (
+          <Image source={{ uri: appLogo }} style={styles.logoImage} resizeMode="contain" />
         ) : (
           <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>{appName.slice(0, 2).toUpperCase()}</Text>
+            <Text style={styles.logoText}>{name.slice(0, 2).toUpperCase()}</Text>
           </View>
         )}
-        <Text style={styles.brandName}>{appName}</Text>
+        <Text style={styles.brandName}>{name}</Text>
         <Text style={styles.tagline}>{tagline}</Text>
       </View>
       <ActivityIndicator size="large" color={COLORS.white} style={styles.loader} />

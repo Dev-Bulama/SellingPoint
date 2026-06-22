@@ -15,7 +15,7 @@ import { useNotificationStore } from '../../store/notificationStore';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
-const BANNER_WIDTH = width - 32;
+const BANNER_WIDTH = width;
 const RECENTLY_VIEWED_KEY = 'recently_viewed';
 const SLIDE_INTERVAL = 3500;
 
@@ -76,7 +76,7 @@ function BannerItem({ banner }: { banner: Banner }) {
 
   if (!banner.image_url || imgFailed) {
     return (
-      <View style={[styles.bannerBg, { backgroundColor: bgColor }]}>
+      <View style={[styles.bannerInner, { backgroundColor: bgColor }]}>
         <Text style={styles.bannerTitle}>{banner.title}</Text>
         {banner.subtitle && <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>}
         {banner.button_text && (
@@ -87,7 +87,7 @@ function BannerItem({ banner }: { banner: Banner }) {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.bannerInner}>
       <Image
         source={{ uri: banner.image_url }}
         style={styles.bannerImage}
@@ -142,10 +142,12 @@ function AutoBannerSlider({ banners, onPress }: { banners: Banner[]; onPress: (b
   if (banners.length === 0) {
     return (
       <View style={styles.bannerWrapper}>
-        <View style={[styles.bannerItem, { backgroundColor: COLORS.primary }]}>
-          <View style={styles.bannerBg}>
-            <Text style={styles.bannerTitle}>Mega Sale — Up to 50% Off!</Text>
-            <Text style={styles.bannerSubtitle}>Shop top brands at unbeatable prices</Text>
+        <View style={styles.bannerItem}>
+          <View style={[styles.bannerInner, { backgroundColor: COLORS.primary }]}>
+            <View style={styles.bannerBg}>
+              <Text style={styles.bannerTitle}>Mega Sale — Up to 50% Off!</Text>
+              <Text style={styles.bannerSubtitle}>Shop top brands at unbeatable prices</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -546,12 +548,14 @@ const styles = StyleSheet.create({
   // Banner
   bannerWrapper: { marginBottom: 4 },
   bannerItem: {
-    width: BANNER_WIDTH, marginHorizontal: 16,
-    borderRadius: SIZES.borderRadiusLg, overflow: 'hidden', height: 160,
+    width: BANNER_WIDTH, paddingHorizontal: 16, height: 160,
   },
-  bannerImage: { width: '100%', height: 160 },
+  bannerInner: {
+    flex: 1, borderRadius: SIZES.borderRadiusLg, overflow: 'hidden',
+  },
+  bannerImage: { flex: 1 },
   bannerBg: {
-    flex: 1, height: 160, padding: 24, justifyContent: 'center',
+    flex: 1, padding: 24, justifyContent: 'center',
     backgroundColor: COLORS.primary,
   },
   bannerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.white, marginBottom: 6 },

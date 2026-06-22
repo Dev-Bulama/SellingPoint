@@ -129,6 +129,7 @@ export default function OrderTrackingScreen({ navigation }: any) {
         <TextInput
           style={styles.searchInput}
           placeholder="Search by order number..."
+            placeholderTextColor="#BDBDBD"
           placeholderTextColor={COLORS.placeholder}
           value={searchQuery}
           onChangeText={setSearchQuery}

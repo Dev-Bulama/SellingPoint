@@ -106,11 +106,11 @@ export default function EditProfileScreen({ navigation }: any) {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Full Name</Text>
-            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Your full name" />
+            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Your full name" placeholderTextColor="#BDBDBD" />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Phone Number</Text>
-            <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="+234 800 000 0000" keyboardType="phone-pad" />
+            <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="+234 800 000 0000" placeholderTextColor="#BDBDBD" keyboardType="phone-pad" />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email Address</Text>

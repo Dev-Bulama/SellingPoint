@@ -229,6 +229,7 @@ export default function CheckoutScreen({ navigation }: any) {
             <TextInput
               style={styles.couponInput}
               placeholder="Enter coupon code"
+            placeholderTextColor="#BDBDBD"
               value={couponCode}
               onChangeText={setCouponCode}
               autoCapitalize="characters"
@@ -276,6 +277,7 @@ export default function CheckoutScreen({ navigation }: any) {
           <TextInput
             style={[styles.couponInput, { height: 80, textAlignVertical: 'top' }]}
             placeholder="Add a note for your order (optional)"
+            placeholderTextColor="#BDBDBD"
             value={orderNotes}
             onChangeText={setOrderNotes}
             multiline

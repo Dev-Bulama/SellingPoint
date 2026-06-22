@@ -200,6 +200,7 @@ export default function SearchScreen({ navigation }: any) {
             ref={inputRef}
             style={styles.input}
             placeholder="Search products, brands, categories..."
+            placeholderTextColor="#BDBDBD"
             placeholderTextColor={COLORS.placeholder}
             value={query}
             onChangeText={handleQueryChange}

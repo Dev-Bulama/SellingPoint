@@ -572,6 +572,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             <TextInput
               style={reviewModalStyles.input}
               placeholder="Summarise your experience"
+            placeholderTextColor="#BDBDBD"
               value={reviewTitle}
               onChangeText={setReviewTitle}
               maxLength={100}
@@ -581,6 +582,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             <TextInput
               style={[reviewModalStyles.input, { height: 100, textAlignVertical: 'top' }]}
               placeholder="Tell others what you think about this product..."
+            placeholderTextColor="#BDBDBD"
               value={reviewBody}
               onChangeText={setReviewBody}
               multiline

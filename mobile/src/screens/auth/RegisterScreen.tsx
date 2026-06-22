@@ -22,7 +22,7 @@ function Field({ label, value, onChangeText, ...props }: FieldProps) {
   return (
     <View style={styles.inputGroup}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput style={styles.input} value={value} onChangeText={onChangeText} {...props} />
+      <TextInput style={styles.input} value={value} onChangeText={onChangeText} placeholderTextColor="#BDBDBD" {...props} />
     </View>
   );
 }

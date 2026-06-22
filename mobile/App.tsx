@@ -10,6 +10,8 @@ import { cmsApi } from './src/api/cms';
 export default function App() {
   const [paystackKey, setPaystackKey] = useState<string | null>(null);
   const [maintenance, setMaintenance] = useState(false);
+  const [appName, setAppName] = useState('Sellingpoint');
+  const [appLogo, setAppLogo] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     cmsApi.settings()
@@ -17,6 +19,8 @@ export default function App() {
         const d = r.data.data ?? {};
         setPaystackKey(d.paystack_public_key || 'pk_test_placeholder');
         setMaintenance(!!d.maintenance_mode);
+        if (d.app_name) setAppName(d.app_name);
+        if (d.app_logo) setAppLogo(d.app_logo);
       })
       .catch(() => {
         setPaystackKey('pk_test_placeholder');
@@ -45,7 +49,7 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
         <PaystackProvider publicKey={paystackKey}>
-          <AppNavigator />
+          <AppNavigator appName={appName} appLogo={appLogo} />
         </PaystackProvider>
       </SafeAreaProvider>
     </View>

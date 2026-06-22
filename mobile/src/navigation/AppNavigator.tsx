@@ -19,7 +19,7 @@ const ONBOARDING_KEY = 'has_seen_onboarding';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function AppNavigator() {
+export default function AppNavigator({ appName, appLogo }: { appName?: string; appLogo?: string }) {
   const { loadUser } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(true);
@@ -60,7 +60,7 @@ export default function AppNavigator() {
     checkSettings();
   }, []);
 
-  if (isLoading) return <SplashScreen />;
+  if (isLoading) return <SplashScreen appName={appName} appLogo={appLogo} />;
 
   return (
     <View style={styles.root}>

@@ -138,6 +138,7 @@ export default function ProductListScreen({ route, navigation }: any) {
           <TextInput
             style={styles.searchInput}
             placeholder="Search..."
+            placeholderTextColor="#BDBDBD"
             value={searchText}
             onChangeText={setSearchText}
             onSubmitEditing={handleSearch}
