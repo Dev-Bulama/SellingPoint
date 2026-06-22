@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   FlatList, RefreshControl, Dimensions, Image, ActivityIndicator, Linking,
+  NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SIZES } from '../../constants';
@@ -108,27 +109,40 @@ function BannerItem({ banner }: { banner: Banner }) {
 // ---------------------------------------------------------------------------
 function AutoBannerSlider({ banners, navigation }: { banners: Banner[]; navigation: any }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const flatRef = useRef<FlatList>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const indexRef = useRef(0);
+  const isDragging = useRef(false);
 
-  const slideTo = (idx: number) => {
+  const slideTo = useCallback((idx: number) => {
     if (!banners.length) return;
     const next = ((idx % banners.length) + banners.length) % banners.length;
     indexRef.current = next;
     setActiveIndex(next);
-    flatRef.current?.scrollToOffset({ offset: next * BANNER_WIDTH, animated: true });
-  };
+    scrollRef.current?.scrollTo({ x: next * BANNER_WIDTH, animated: true });
+  }, [banners.length]);
 
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => slideTo(indexRef.current + 1), SLIDE_INTERVAL);
-  }, [banners.length]);
+    if (banners.length <= 1) return;
+    timerRef.current = setInterval(() => {
+      if (!isDragging.current) slideTo(indexRef.current + 1);
+    }, SLIDE_INTERVAL);
+  }, [banners.length, slideTo]);
 
   useEffect(() => {
-    if (banners.length > 1) startTimer();
+    startTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [banners.length]);
+  }, [startTimer]);
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const idx = Math.round(x / BANNER_WIDTH);
+    if (idx !== indexRef.current) {
+      indexRef.current = idx;
+      setActiveIndex(idx);
+    }
+  };
 
   const handleBannerPress = useCallback((banner: Banner) => {
     const link = banner.link ?? '';
@@ -137,17 +151,8 @@ function AutoBannerSlider({ banners, navigation }: { banners: Banner[]; navigati
     const categoryMatch = link.match(/(?:\/categories\/|category:)(\d+)/);
     if (categoryMatch) { navigation.navigate('ProductList', { categoryId: Number(categoryMatch[1]), title: banner.title }); return; }
     if (link.startsWith('http')) { Linking.openURL(link); return; }
-    // Fallback: always go to product list
     navigation.navigate('ProductList', { title: banner.title || 'Shop Now' });
   }, [navigation]);
-
-  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 51 });
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems[0]) {
-      indexRef.current = viewableItems[0].index ?? 0;
-      setActiveIndex(viewableItems[0].index ?? 0);
-    }
-  });
 
   if (banners.length === 0) {
     return (
@@ -167,24 +172,38 @@ function AutoBannerSlider({ banners, navigation }: { banners: Banner[]; navigati
 
   return (
     <View style={styles.bannerWrapper}>
-      <FlatList
-        ref={flatRef}
-        data={banners}
+      <ScrollView
+        ref={scrollRef}
         horizontal
-        pagingEnabled
+        pagingEnabled={false}
+        snapToInterval={BANNER_WIDTH}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum
+        nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => String(item.id)}
-        getItemLayout={(_, index) => ({ length: BANNER_WIDTH, offset: BANNER_WIDTH * index, index })}
-        viewabilityConfig={viewabilityConfig.current}
-        onViewableItemsChanged={onViewableItemsChanged.current}
-        onScrollBeginDrag={() => { if (timerRef.current) clearInterval(timerRef.current); }}
-        onMomentumScrollEnd={startTimer}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.bannerItem} activeOpacity={0.92} onPress={() => handleBannerPress(item)}>
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        onScrollBeginDrag={() => {
+          isDragging.current = true;
+          if (timerRef.current) clearInterval(timerRef.current);
+        }}
+        onMomentumScrollEnd={() => {
+          isDragging.current = false;
+          startTimer();
+        }}
+      >
+        {banners.map((item) => (
+          <TouchableOpacity
+            key={String(item.id)}
+            style={styles.bannerItem}
+            activeOpacity={0.92}
+            onPress={() => handleBannerPress(item)}
+          >
             <BannerItem banner={item} />
           </TouchableOpacity>
-        )}
-      />
+        ))}
+      </ScrollView>
       {banners.length > 1 && (
         <View style={styles.dotsRow}>
           {banners.map((_, i) => (
