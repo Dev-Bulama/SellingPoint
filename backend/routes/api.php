@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
+    // Connectivity check — no auth required
+    Route::match(['get', 'head'], 'ping', fn() => response()->json(['ok' => true]));
+
     // Auth (rate-limited)
     Route::prefix('auth')->middleware('throttle:auth')->group(function () {
         Route::post('register', [AuthController::class, 'register']);
