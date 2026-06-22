@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
 import { Order } from '../../types';
 import { COLORS, SIZES, ORDER_STATUSES, PAYMENT_STATUSES } from '../../constants';
 import { formatCurrency, formatDateTime } from '../../utils/currency';
+import AppAlert from '../../components/AppAlert';
 
 const STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 
@@ -12,17 +13,30 @@ export default function OrderDetailScreen({ route, navigation }: any) {
   const { orderNumber } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[];
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (
+    icon: string, iconColor: string, title: string, message: string,
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[],
+  ) => {
+    setAlertProps({ icon, iconColor, title, message, buttons });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     ordersApi.show(orderNumber).then(res => setOrder(res.data.data)).catch(() => navigation.goBack()).finally(() => setLoading(false));
   }, [orderNumber]);
 
   const handleCancel = () => {
-    Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
-      { text: 'No', style: 'cancel' },
+    showAlert('close-circle', COLORS.danger, 'Cancel Order', 'Are you sure you want to cancel this order?', [
+      { text: 'No', style: 'outline', onPress: () => setAlertVisible(false) },
       {
-        text: 'Yes, Cancel', style: 'destructive',
-        onPress: async () => {
+        text: 'Yes, Cancel', style: 'primary', onPress: async () => {
+          setAlertVisible(false);
           await ordersApi.cancel(orderNumber, 'Customer requested cancellation');
           setOrder(prev => prev ? { ...prev, status: 'cancelled' } : prev);
         },
@@ -39,6 +53,15 @@ export default function OrderDetailScreen({ route, navigation }: any) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}><IonIcon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
@@ -149,7 +172,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 16, backgroundColor: COLORS.white },
-  backText: { color: COLORS.primary, fontSize: 15 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   statusCard: { backgroundColor: COLORS.white, padding: SIZES.screenPadding, marginBottom: 12, alignItems: 'center' },
   orderNum: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },

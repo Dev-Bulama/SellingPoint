@@ -1,14 +1,28 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { Address } from '../../types';
 import { COLORS, SIZES } from '../../constants';
+import AppAlert from '../../components/AppAlert';
 
 export default function AddressesScreen({ navigation }: any) {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[];
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (
+    icon: string, iconColor: string, title: string, message: string,
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[],
+  ) => {
+    setAlertProps({ icon, iconColor, title, message, buttons });
+    setAlertVisible(true);
+  };
 
   const load = async () => {
     try {
@@ -18,12 +32,15 @@ export default function AddressesScreen({ navigation }: any) {
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert('Delete Address', 'Remove this address?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        await apiClient.delete(`/addresses/${id}`);
-        setAddresses(prev => prev.filter(a => a.id !== id));
-      }},
+    showAlert('trash-outline', COLORS.danger, 'Delete Address', 'Remove this address?', [
+      { text: 'Cancel', style: 'outline', onPress: () => setAlertVisible(false) },
+      {
+        text: 'Delete', style: 'primary', onPress: async () => {
+          setAlertVisible(false);
+          await apiClient.delete(`/addresses/${id}`);
+          setAddresses(prev => prev.filter(a => a.id !== id));
+        },
+      },
     ]);
   };
 
@@ -38,6 +55,15 @@ export default function AddressesScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}><IonIcon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
         <Text style={styles.headerTitle}>My Addresses</Text>
@@ -84,7 +110,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 16, backgroundColor: COLORS.white },
-  backText: { color: COLORS.primary, fontSize: 15 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   addText: { color: COLORS.primary, fontSize: 15, fontWeight: '600' },
   card: { backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius, padding: 16, marginBottom: 12, elevation: 1, borderWidth: 1, borderColor: COLORS.border },

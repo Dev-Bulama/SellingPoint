@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Switch, Alert, ActivityIndicator,
+  TextInput, Switch, ActivityIndicator,
 } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { COLORS, SIZES } from '../../constants';
+import AppAlert from '../../components/AppAlert';
 
 export default function AddAddressScreen({ navigation }: any) {
   const [form, setForm] = useState({
@@ -20,13 +21,22 @@ export default function AddAddressScreen({ navigation }: any) {
     is_default: false,
   });
   const [loading, setLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (icon: string, iconColor: string, title: string, message: string) => {
+    setAlertProps({ icon, iconColor, title, message });
+    setAlertVisible(true);
+  };
 
   const set = (key: string, value: string | boolean) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSave = async () => {
     if (!form.full_name || !form.phone || !form.address_line1 || !form.city || !form.state) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      showAlert('alert-circle', COLORS.warning, 'Required Fields', 'Please fill in all required fields');
       return;
     }
     setLoading(true);
@@ -34,7 +44,7 @@ export default function AddAddressScreen({ navigation }: any) {
       await apiClient.post('/addresses', form);
       navigation.goBack();
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message ?? 'Failed to save address');
+      showAlert('close-circle', COLORS.danger, 'Error', e?.response?.data?.message ?? 'Failed to save address');
     } finally {
       setLoading(false);
     }
@@ -42,6 +52,14 @@ export default function AddAddressScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        onDismiss={() => setAlertVisible(false)}
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <IonIcon name="arrow-back" size={22} color={COLORS.text} />
@@ -101,7 +119,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 16,
     backgroundColor: COLORS.white,
   },
-  backText: { color: COLORS.primary, fontSize: 15 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   content: { padding: SIZES.screenPadding },
   inputGroup: { marginBottom: 16 },

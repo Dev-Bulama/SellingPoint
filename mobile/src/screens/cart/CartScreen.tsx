@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Alert, Image, Animated, Pressable,
+  ActivityIndicator, Image, Animated, Pressable,
   Dimensions,
 } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
@@ -9,6 +9,7 @@ import { COLORS, SIZES } from '../../constants';
 import { useCartStore } from '../../store/cartStore';
 import { CartItem } from '../../types';
 import { formatCurrency } from '../../utils/currency';
+import AppAlert from '../../components/AppAlert';
 
 const { width } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 80;
@@ -20,47 +21,38 @@ function CartItemRow({
   item,
   onUpdateQty,
   onRemove,
+  onConfirmRemove,
 }: {
   item: CartItem;
   onUpdateQty: (id: number, qty: number) => void;
   onRemove: (id: number) => void;
+  onConfirmRemove: (id: number, name: string, onCancel: () => void) => void;
 }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const [swiped, setSwiped] = useState(false);
 
   const handleLongPress = () => {
     if (swiped) {
-      // Reset
       Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
       setSwiped(false);
     } else {
-      // Reveal delete
       Animated.spring(translateX, { toValue: -SWIPE_THRESHOLD, useNativeDriver: true }).start();
       setSwiped(true);
     }
   };
 
-  const confirmRemove = () => {
-    Alert.alert('Remove Item', `Remove "${item.product.name}" from cart?`, [
-      {
-        text: 'Cancel', style: 'cancel',
-        onPress: () => {
-          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
-          setSwiped(false);
-        },
-      },
-      {
-        text: 'Remove', style: 'destructive',
-        onPress: () => onRemove(item.id),
-      },
-    ]);
+  const triggerRemove = () => {
+    onConfirmRemove(item.id, item.product.name, () => {
+      Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+      setSwiped(false);
+    });
   };
 
   return (
     <View style={styles.swipeWrapper}>
       {/* Delete reveal layer */}
       <View style={styles.deleteReveal}>
-        <TouchableOpacity style={styles.deleteBtn} onPress={confirmRemove}>
+        <TouchableOpacity style={styles.deleteBtn} onPress={triggerRemove}>
           <IonIcon name="trash-outline" size={20} color={COLORS.white} />
           <Text style={styles.deleteBtnLabel}>Remove</Text>
         </TouchableOpacity>
@@ -96,7 +88,7 @@ function CartItemRow({
                 onPress={() =>
                   item.quantity > 1
                     ? onUpdateQty(item.id, item.quantity - 1)
-                    : confirmRemove()
+                    : triggerRemove()
                 }
               >
                 {item.quantity === 1
@@ -129,12 +121,10 @@ function CartItemRow({
 function EmptyCart({ onShopNow }: { onShopNow: () => void }) {
   return (
     <View style={styles.empty}>
-      {/* Cart illustration */}
       <View style={styles.emptyIllustration}>
         <View style={styles.emptyCircle}>
           <IonIcon name="cart-outline" size={64} color={COLORS.border} />
         </View>
-        {/* Floating dots for decoration */}
         <View style={[styles.floatDot, { top: 10, right: 20, width: 10, height: 10, backgroundColor: COLORS.primaryLight }]} />
         <View style={[styles.floatDot, { bottom: 20, left: 10, width: 14, height: 14, backgroundColor: COLORS.accent }]} />
         <View style={[styles.floatDot, { top: 30, left: 5, width: 8, height: 8, backgroundColor: COLORS.warning }]} />
@@ -159,12 +149,33 @@ function EmptyCart({ onShopNow }: { onShopNow: () => void }) {
 export default function CartScreen({ navigation }: any) {
   const { cart, isLoading, fetchCart, updateItem, removeItem, clearCart } = useCartStore();
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[];
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (
+    icon: string, iconColor: string, title: string, message: string,
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[],
+  ) => {
+    setAlertProps({ icon, iconColor, title, message, buttons });
+    setAlertVisible(true);
+  };
+
   useEffect(() => { fetchCart(); }, []);
 
   const handleClear = () => {
-    Alert.alert('Clear Cart', 'Remove all items from your cart?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear All', style: 'destructive', onPress: clearCart },
+    showAlert('trash-outline', COLORS.danger, 'Clear Cart', 'Remove all items from your cart?', [
+      { text: 'Cancel', style: 'outline', onPress: () => setAlertVisible(false) },
+      { text: 'Clear All', style: 'primary', onPress: () => { setAlertVisible(false); clearCart(); } },
+    ]);
+  };
+
+  const handleConfirmRemove = (id: number, name: string, onCancel: () => void) => {
+    showAlert('trash-outline', COLORS.danger, 'Remove Item', `Remove "${name}" from cart?`, [
+      { text: 'Cancel', style: 'outline', onPress: () => { setAlertVisible(false); onCancel(); } },
+      { text: 'Remove', style: 'primary', onPress: () => { setAlertVisible(false); removeItem(id); } },
     ]);
   };
 
@@ -180,6 +191,16 @@ export default function CartScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
+
       {/* ── Header ── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Cart</Text>
@@ -202,6 +223,7 @@ export default function CartScreen({ navigation }: any) {
                 item={item}
                 onUpdateQty={updateItem}
                 onRemove={removeItem}
+                onConfirmRemove={handleConfirmRemove}
               />
             )}
             contentContainerStyle={styles.listContent}
@@ -248,7 +270,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Header
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SIZES.screenPadding, paddingTop: 52, paddingBottom: 16,
@@ -258,11 +279,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   clearBtn: { color: COLORS.danger, fontSize: 14, fontWeight: '500' },
 
-  // List
   listContent: { padding: SIZES.screenPadding, paddingBottom: 8 },
   swipeHint: { textAlign: 'center', fontSize: 11, color: COLORS.textMuted, marginTop: 4, marginBottom: 12 },
 
-  // Swipe layout
   swipeWrapper: { marginBottom: 12, borderRadius: SIZES.borderRadius, overflow: 'hidden' },
   deleteReveal: {
     position: 'absolute', right: 0, top: 0, bottom: 0,
@@ -271,17 +290,14 @@ const styles = StyleSheet.create({
     borderRadius: SIZES.borderRadius,
   },
   deleteBtn: { alignItems: 'center' },
-  deleteBtnText: { fontSize: 20 },
   deleteBtnLabel: { color: COLORS.white, fontSize: 11, fontWeight: '600', marginTop: 2 },
 
-  // Cart item
   cartItem: {
     backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius,
     elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1,
   },
   cartItemInner: { flexDirection: 'row', padding: 12 },
 
-  // Item image
   itemImage: {
     width: 90, height: 90, borderRadius: SIZES.borderRadiusSm,
     backgroundColor: COLORS.grayLight, alignItems: 'center', justifyContent: 'center',
@@ -289,13 +305,11 @@ const styles = StyleSheet.create({
   },
   itemImageImg: { width: 90, height: 90 },
 
-  // Item details
   itemDetails: { flex: 1 },
   itemName: { fontSize: 14, color: COLORS.text, fontWeight: '600', marginBottom: 3, lineHeight: 20 },
   variantText: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 4 },
   itemPrice: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary, marginBottom: 10 },
 
-  // Quantity stepper
   qtyRow: { flexDirection: 'row', alignItems: 'center' },
   qtyCircleBtn: {
     width: 34, height: 34, borderRadius: 17,
@@ -303,14 +317,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: COLORS.border,
   },
   qtyCircleBtnDanger: { borderColor: COLORS.danger, backgroundColor: '#FFF0F0' },
-  qtyBtnText: { fontSize: 16, color: COLORS.text, fontWeight: 'bold' },
   qtyValue: {
     fontSize: 16, fontWeight: 'bold', color: COLORS.text,
     marginHorizontal: 14, minWidth: 20, textAlign: 'center',
   },
   subtotal: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginLeft: 'auto' },
 
-  // Footer
   footer: {
     backgroundColor: COLORS.white, paddingHorizontal: SIZES.screenPadding,
     paddingTop: 12, paddingBottom: 32,
@@ -337,7 +349,6 @@ const styles = StyleSheet.create({
   },
   checkoutBtnText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
 
-  // Empty state
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyIllustration: {
     width: 160, height: 160, marginBottom: 28, alignItems: 'center', justifyContent: 'center',
@@ -349,7 +360,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     elevation: 4, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15,
   },
-  emptyCartIcon: { fontSize: 64 },
   floatDot: { position: 'absolute', borderRadius: 99 },
   emptyTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginBottom: 10 },
   emptySubtext: {

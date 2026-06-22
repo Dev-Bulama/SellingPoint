@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Linking,
-  Alert,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES } from '../../constants';
+import AppAlert from '../../components/AppAlert';
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sellingpoint';
 
@@ -29,26 +29,38 @@ export default function ForceUpdateScreen({ route }: ForceUpdateScreenProps) {
     requiredVersion: '1.0.1',
   };
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (icon: string, iconColor: string, title: string, message: string) => {
+    setAlertProps({ icon, iconColor, title, message });
+    setAlertVisible(true);
+  };
+
   const handleUpdate = async () => {
     try {
       const supported = await Linking.canOpenURL(PLAY_STORE_URL);
       if (supported) {
         await Linking.openURL(PLAY_STORE_URL);
       } else {
-        Alert.alert(
-          'Update Required',
-          'Please visit the Play Store to update the app.',
-          [{ text: 'OK' }]
-        );
+        showAlert('refresh-circle', COLORS.primary, 'Update Required', 'Please visit the Play Store to update the app.');
       }
     } catch {
-      Alert.alert('Error', 'Unable to open the Play Store. Please update manually.');
+      showAlert('close-circle', COLORS.danger, 'Error', 'Unable to open the Play Store. Please update manually.');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        onDismiss={() => setAlertVisible(false)}
+      />
 
       <View style={styles.headerBand}>
         <View style={styles.logoContainer}>
@@ -108,10 +120,7 @@ export default function ForceUpdateScreen({ route }: ForceUpdateScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
   headerBand: {
     backgroundColor: COLORS.primary,
     paddingVertical: SIZES.xl,
@@ -119,148 +128,42 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
-  logoContainer: {
-    alignItems: 'center',
-  },
+  logoContainer: { alignItems: 'center' },
   logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 72, height: 72, borderRadius: 36,
     backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     marginBottom: SIZES.sm,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  brandName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    letterSpacing: 0.5,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SIZES.screenPadding,
-    paddingTop: SIZES.xxl,
-    alignItems: 'center',
-  },
-  updateIconContainer: {
-    marginBottom: SIZES.base,
-  },
-  updateIcon: {
-    fontSize: 48,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    textAlign: 'center',
-    marginBottom: SIZES.sm,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: SIZES.xl,
-    paddingHorizontal: SIZES.sm,
-  },
+  logoText: { fontSize: 28, fontWeight: 'bold', color: COLORS.primary },
+  brandName: { fontSize: 20, fontWeight: 'bold', color: COLORS.white, letterSpacing: 0.5 },
+  content: { flex: 1, paddingHorizontal: SIZES.screenPadding, paddingTop: SIZES.xxl, alignItems: 'center' },
+  updateIconContainer: { marginBottom: SIZES.base },
+  title: { fontSize: 24, fontWeight: 'bold', color: COLORS.text, textAlign: 'center', marginBottom: SIZES.sm },
+  subtitle: { fontSize: 15, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: SIZES.xl, paddingHorizontal: SIZES.sm },
   versionCard: {
-    alignSelf: 'stretch',
-    backgroundColor: COLORS.surface,
-    borderRadius: SIZES.borderRadius,
-    padding: SIZES.base,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SIZES.xl,
+    alignSelf: 'stretch', backgroundColor: COLORS.surface,
+    borderRadius: SIZES.borderRadius, padding: SIZES.base,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: SIZES.xl,
   },
-  versionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SIZES.xs,
-  },
-  versionDivider: {
-    height: 1,
-    backgroundColor: COLORS.divider,
-    marginVertical: SIZES.xs,
-  },
-  versionLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  versionBadge: {
-    backgroundColor: COLORS.grayLight,
-    borderRadius: SIZES.borderRadiusSm,
-    paddingHorizontal: SIZES.sm,
-    paddingVertical: 4,
-  },
-  versionBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.grayDark,
-  },
-  versionBadgeNew: {
-    backgroundColor: '#E8F5E9',
-  },
-  versionBadgeNewText: {
-    color: COLORS.success,
-  },
-  featureHeading: {
-    alignSelf: 'flex-start',
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: SIZES.xs,
-  },
-  featureList: {
-    alignSelf: 'stretch',
-    marginBottom: SIZES.xl,
-  },
-  featureItem: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    lineHeight: 22,
-  },
+  versionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SIZES.xs },
+  versionDivider: { height: 1, backgroundColor: COLORS.divider, marginVertical: SIZES.xs },
+  versionLabel: { fontSize: 14, color: COLORS.textSecondary },
+  versionBadge: { backgroundColor: COLORS.grayLight, borderRadius: SIZES.borderRadiusSm, paddingHorizontal: SIZES.sm, paddingVertical: 4 },
+  versionBadgeText: { fontSize: 13, fontWeight: '600', color: COLORS.grayDark },
+  versionBadgeNew: { backgroundColor: '#E8F5E9' },
+  versionBadgeNewText: { color: COLORS.success },
+  featureHeading: { alignSelf: 'flex-start', fontSize: 13, fontWeight: '600', color: COLORS.textSecondary, marginBottom: SIZES.xs },
+  featureList: { alignSelf: 'stretch', marginBottom: SIZES.xl },
+  featureItem: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 22 },
   updateButton: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.primary,
-    alignSelf: 'stretch',
-    height: 52,
-    borderRadius: SIZES.borderRadius,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
+    flexDirection: 'row', backgroundColor: COLORS.primary,
+    alignSelf: 'stretch', height: 52, borderRadius: SIZES.borderRadius,
+    alignItems: 'center', justifyContent: 'center',
+    elevation: 3, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4,
     marginBottom: SIZES.sm,
   },
-  updateButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  updateButtonIcon: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footnote: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: SIZES.xs,
-  },
+  updateButtonText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
+  footnote: { fontSize: 12, color: COLORS.textMuted, textAlign: 'center', marginTop: SIZES.xs },
 });

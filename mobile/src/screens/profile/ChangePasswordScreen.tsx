@@ -1,23 +1,43 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { authApi } from '../../api/auth';
 import { COLORS, SIZES } from '../../constants';
 import { getErrorMessage } from '../../utils/currency';
+import AppAlert from '../../components/AppAlert';
 
 export default function ChangePasswordScreen({ navigation }: any) {
   const [form, setForm] = useState({ current_password: '', password: '', password_confirmation: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[];
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (
+    icon: string, iconColor: string, title: string, message: string,
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[],
+  ) => {
+    setAlertProps({ icon, iconColor, title, message, buttons });
+    setAlertVisible(true);
+  };
+
   const update = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async () => {
-    if (form.password !== form.password_confirmation) { Alert.alert('Error', 'Passwords do not match'); return; }
+    if (form.password !== form.password_confirmation) {
+      showAlert('close-circle', COLORS.danger, 'Error', 'Passwords do not match');
+      return;
+    }
     setIsLoading(true);
     try {
       await authApi.changePassword(form);
-      Alert.alert('Success', 'Password changed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      showAlert('checkmark-circle', COLORS.success, 'Success', 'Password changed!', [
+        { text: 'OK', style: 'primary', onPress: () => { setAlertVisible(false); navigation.goBack(); } },
+      ]);
     } catch (e) {
-      Alert.alert('Error', getErrorMessage(e));
+      showAlert('close-circle', COLORS.danger, 'Error', getErrorMessage(e));
     } finally { setIsLoading(false); }
   };
 
@@ -30,6 +50,15 @@ export default function ChangePasswordScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}><IonIcon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Change Password</Text>

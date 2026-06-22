@@ -20,8 +20,8 @@ type Props = {
 };
 
 export default function AppAlert({ visible, icon, iconColor, title, message, buttons, onDismiss }: Props) {
-  const resolvedIcon = icon ?? 'information-circle';
-  const resolvedColor = iconColor ?? COLORS.primary;
+  const resolvedIcon = icon || 'information-circle';
+  const resolvedColor = iconColor || COLORS.primary;
   const resolvedButtons: AlertButton[] = buttons && buttons.length > 0
     ? buttons
     : [{ text: 'OK', onPress: onDismiss, style: 'primary' }];

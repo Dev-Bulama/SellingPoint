@@ -10,12 +10,12 @@ import {
   StatusBar,
   Modal,
   TextInput,
-  Alert,
 } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import apiClient from '../../api/client';
 import { COLORS, SIZES } from '../../constants';
+import AppAlert from '../../components/AppAlert';
 
 interface CmsSettings {
   whatsapp_number?: string;
@@ -45,14 +45,21 @@ interface ReportIssueModalProps {
 function ReportIssueModal({ visible, onClose, onSubmit, submitting }: ReportIssueModalProps) {
   const [selectedType, setSelectedType] = useState('');
   const [description, setDescription] = useState('');
+  const [localAlertVisible, setLocalAlertVisible] = useState(false);
+  const [localAlertProps, setLocalAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showLocalAlert = (icon: string, iconColor: string, title: string, message: string) => {
+    setLocalAlertProps({ icon, iconColor, title, message });
+    setLocalAlertVisible(true);
+  };
 
   const handleSubmit = () => {
     if (!selectedType) {
-      Alert.alert('Select Issue Type', 'Please select an issue type before submitting.');
+      showLocalAlert('alert-circle', COLORS.warning, 'Select Issue Type', 'Please select an issue type before submitting.');
       return;
     }
     if (description.trim().length < 10) {
-      Alert.alert('Describe your issue', 'Please provide a description of at least 10 characters.');
+      showLocalAlert('alert-circle', COLORS.warning, 'Describe Your Issue', 'Please provide a description of at least 10 characters.');
       return;
     }
     onSubmit(selectedType, description.trim());
@@ -67,6 +74,14 @@ function ReportIssueModal({ visible, onClose, onSubmit, submitting }: ReportIssu
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <SafeAreaView style={styles.modalContainer}>
+        <AppAlert
+          visible={localAlertVisible}
+          icon={localAlertProps.icon}
+          iconColor={localAlertProps.iconColor}
+          title={localAlertProps.title}
+          message={localAlertProps.message}
+          onDismiss={() => setLocalAlertVisible(false)}
+        />
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Report an Issue</Text>
           <TouchableOpacity onPress={handleClose} style={styles.modalCloseButton}>
@@ -161,6 +176,15 @@ export default function SupportScreen({ navigation }: any) {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (icon: string, iconColor: string, title: string, message: string) => {
+    setAlertProps({ icon, iconColor, title, message });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     loadSettings();
@@ -173,7 +197,6 @@ export default function SupportScreen({ navigation }: any) {
       const data = res.data?.data ?? res.data ?? {};
       setSettings(data);
     } catch {
-      // Use defaults silently
     } finally {
       setSettingsLoading(false);
     }
@@ -182,7 +205,7 @@ export default function SupportScreen({ navigation }: any) {
   const openWhatsApp = async () => {
     const phone = settings.whatsapp_number ?? '';
     if (!phone) {
-      Alert.alert('Unavailable', 'WhatsApp support is not configured yet.');
+      showAlert('information-circle', COLORS.primary, 'Unavailable', 'WhatsApp support is not configured yet.');
       return;
     }
     const cleaned = phone.replace(/\D/g, '');
@@ -192,10 +215,10 @@ export default function SupportScreen({ navigation }: any) {
       if (supported) {
         await Linking.openURL(url);
       } else {
-        Alert.alert('WhatsApp not installed', 'Please install WhatsApp to use this feature.');
+        showAlert('logo-whatsapp', '#25D366', 'WhatsApp Not Installed', 'Please install WhatsApp to use this feature.');
       }
     } catch {
-      Alert.alert('Error', 'Could not open WhatsApp. Please try again.');
+      showAlert('close-circle', COLORS.danger, 'Error', 'Could not open WhatsApp. Please try again.');
     }
   };
 
@@ -205,7 +228,7 @@ export default function SupportScreen({ navigation }: any) {
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert('Error', `Could not open email client. Please email us at ${email}`);
+      showAlert('mail-outline', COLORS.primary, 'Error', `Could not open email client. Please email us at ${email}`);
     }
   };
 
@@ -214,13 +237,9 @@ export default function SupportScreen({ navigation }: any) {
     try {
       await apiClient.post('/support/issues', { issue_type: issueType, description });
       setShowReportModal(false);
-      Alert.alert(
-        'Report Submitted',
-        'Thank you! Our team will review your issue and get back to you shortly.',
-        [{ text: 'OK' }]
-      );
+      showAlert('checkmark-circle', COLORS.success, 'Report Submitted', 'Thank you! Our team will review your issue and get back to you shortly.');
     } catch {
-      Alert.alert('Submission Failed', 'We could not submit your report. Please try again or contact us via email.');
+      showAlert('close-circle', COLORS.danger, 'Submission Failed', 'We could not submit your report. Please try again or contact us via email.');
     } finally {
       setSubmittingReport(false);
     }
@@ -231,6 +250,14 @@ export default function SupportScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <AppAlert
+        visible={alertVisible}
+        icon={alertProps.icon}
+        iconColor={alertProps.iconColor}
+        title={alertProps.title}
+        message={alertProps.message}
+        onDismiss={() => setAlertVisible(false)}
+      />
 
       {/* Header */}
       <View style={styles.header}>
@@ -337,7 +364,6 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   backButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon: { fontSize: 22, color: COLORS.text, fontWeight: '600' },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '700', color: COLORS.text },
   headerSpacer: { width: 36 },
   heroBanner: {
@@ -346,7 +372,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: SIZES.xxl,
   },
-  heroIcon: { fontSize: 48, marginBottom: SIZES.sm },
   heroTitle: { fontSize: 20, fontWeight: '800', color: COLORS.white, marginBottom: 4 },
   heroSubtitle: { fontSize: 15, color: 'rgba(255,255,255,0.85)', marginBottom: 4 },
   businessHours: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
@@ -385,11 +410,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: SIZES.sm,
   },
-  menuIcon: { fontSize: 18 },
   menuContent: { flex: 1 },
   menuTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text },
   menuSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  menuArrow: { fontSize: 20, color: COLORS.textMuted },
   separator: { height: 1, backgroundColor: COLORS.divider, marginLeft: 68 },
   noticeCard: {
     flexDirection: 'row',
@@ -400,7 +423,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BEE3F8',
   },
-  noticeIcon: { fontSize: 22, marginRight: SIZES.sm },
   noticeContent: { flex: 1 },
   noticeTitle: { fontSize: 13, fontWeight: '700', color: COLORS.info, marginBottom: 4 },
   noticeText: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
@@ -418,7 +440,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: COLORS.text },
   modalCloseButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  modalCloseIcon: { fontSize: 16, color: COLORS.grayDark, fontWeight: '600' },
   modalScroll: { flex: 1, padding: SIZES.screenPadding },
   modalSectionLabel: {
     fontSize: 14,

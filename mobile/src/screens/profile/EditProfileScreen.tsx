@@ -1,19 +1,33 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { COLORS, SIZES } from '../../constants';
 import { getErrorMessage } from '../../utils/currency';
+import AppAlert from '../../components/AppAlert';
 
 export default function EditProfileScreen({ navigation }: any) {
   const { user, updateUser } = useAuthStore();
   const [name, setName] = useState(user?.name ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [isLoading, setIsLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState<{
+    icon: string; iconColor: string; title: string; message: string;
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[];
+  }>({ icon: '', iconColor: '', title: '', message: '' });
+
+  const showAlert = (
+    icon: string, iconColor: string, title: string, message: string,
+    buttons?: { text: string; onPress?: () => void; style?: 'primary' | 'outline' }[],
+  ) => {
+    setAlertProps({ icon, iconColor, title, message, buttons });
+    setAlertVisible(true);
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -23,10 +37,11 @@ export default function EditProfileScreen({ navigation }: any) {
       if (phone) formData.append('phone', phone);
       const res = await authApi.updateProfile(formData);
       updateUser(res.data.user);
-      Alert.alert('Success', 'Profile updated!');
-      navigation.goBack();
+      showAlert('checkmark-circle', COLORS.success, 'Success', 'Profile updated!', [
+        { text: 'OK', style: 'primary', onPress: () => { setAlertVisible(false); navigation.goBack(); } },
+      ]);
     } catch (e) {
-      Alert.alert('Error', getErrorMessage(e));
+      showAlert('close-circle', COLORS.danger, 'Error', getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -35,6 +50,15 @@ export default function EditProfileScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
+        <AppAlert
+          visible={alertVisible}
+          icon={alertProps.icon}
+          iconColor={alertProps.iconColor}
+          title={alertProps.title}
+          message={alertProps.message}
+          buttons={alertProps.buttons}
+          onDismiss={() => setAlertVisible(false)}
+        />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <IonIcon name="arrow-back" size={22} color={COLORS.text} />
@@ -68,7 +92,6 @@ export default function EditProfileScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SIZES.screenPadding, paddingTop: 48, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  backText: { color: COLORS.text, fontSize: 15 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   content: { padding: SIZES.screenPadding },
   inputGroup: { marginBottom: 20 },
