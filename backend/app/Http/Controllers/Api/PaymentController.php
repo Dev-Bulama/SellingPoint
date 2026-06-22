@@ -66,35 +66,52 @@ class PaymentController extends Controller
 
     public function verify(Request $request): JsonResponse
     {
-        $request->validate(['reference' => 'required|string']);
+        $request->validate([
+            'reference'    => 'required|string',
+            'order_number' => 'required|string',
+        ]);
 
-        $payment = Payment::where('reference', $request->reference)
-            ->where('user_id', $request->user()->id)
-            ->firstOrFail();
-
-        if ($payment->status === 'success') {
-            return response()->json(['message' => 'Payment already verified', 'status' => 'success']);
+        // If already verified successfully, return early
+        $existing = Payment::where('reference', $request->reference)->first();
+        if ($existing && $existing->status === 'success') {
+            return response()->json(['status' => 'success', 'message' => 'Payment already verified']);
         }
 
+        // Locate the order for this user
+        $order = $request->user()->orders()
+            ->where('order_number', $request->order_number)
+            ->firstOrFail();
+
+        // Verify with Paystack
         $response = Http::withToken($this->paystackSecretKey())
             ->get("https://api.paystack.co/transaction/verify/{$request->reference}");
 
         if (!$response->successful()) {
-            return response()->json(['message' => 'Verification failed'], 500);
+            Log::error('Paystack verify HTTP error', ['ref' => $request->reference, 'status' => $response->status()]);
+            return response()->json(['message' => 'Could not reach payment gateway'], 502);
         }
 
         $data   = $response->json('data');
-        $status = $data['status'];
+        $status = $data['status'] ?? 'failed';
 
-        $payment->update([
-            'status'           => $status === 'success' ? 'success' : 'failed',
-            'gateway_response' => $data,
-            'channel'          => $data['channel'] ?? null,
-            'paid_at'          => $status === 'success' ? now() : null,
-        ]);
+        // Upsert payment record
+        $payment = Payment::updateOrCreate(
+            ['reference' => $request->reference],
+            [
+                'order_id'         => $order->id,
+                'user_id'          => $request->user()->id,
+                'amount'           => ($data['amount'] ?? 0) / 100,
+                'currency'         => $data['currency'] ?? 'NGN',
+                'status'           => $status === 'success' ? 'success' : 'failed',
+                'gateway_response' => $data,
+                'channel'          => $data['channel'] ?? null,
+                'paid_at'          => $status === 'success' ? now() : null,
+                'ip_address'       => $request->ip(),
+            ]
+        );
 
         if ($status === 'success') {
-            $payment->order->update([
+            $order->update([
                 'payment_status' => 'paid',
                 'status'         => 'confirmed',
                 'confirmed_at'   => now(),
@@ -103,8 +120,8 @@ class PaymentController extends Controller
 
         return response()->json([
             'status'  => $payment->status,
-            'message' => $status === 'success' ? 'Payment successful' : 'Payment failed',
-        ]);
+            'message' => $status === 'success' ? 'Payment successful' : 'Payment failed or not yet completed',
+        ], $status === 'success' ? 200 : 422);
     }
 
     public function webhook(Request $request): JsonResponse

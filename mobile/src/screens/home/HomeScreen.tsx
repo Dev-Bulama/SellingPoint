@@ -106,84 +106,89 @@ function BannerItem({ banner }: { banner: Banner }) {
 // ---------------------------------------------------------------------------
 // AutoBannerSlider
 // ---------------------------------------------------------------------------
-function AutoBannerSlider({ banners, onPress }: { banners: Banner[]; onPress: (b: Banner) => void }) {
+function AutoBannerSlider({ banners, navigation }: { banners: Banner[]; navigation: any }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const flatRef = useRef<FlatList>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const indexRef = useRef(0);
 
   const slideTo = (idx: number) => {
+    if (!banners.length) return;
     const next = ((idx % banners.length) + banners.length) % banners.length;
     indexRef.current = next;
     setActiveIndex(next);
-    scrollRef.current?.scrollTo({ x: next * BANNER_WIDTH, animated: true });
+    flatRef.current?.scrollToOffset({ offset: next * BANNER_WIDTH, animated: true });
   };
 
-  const startTimer = () => {
+  const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      slideTo(indexRef.current + 1);
-    }, SLIDE_INTERVAL);
-  };
+    timerRef.current = setInterval(() => slideTo(indexRef.current + 1), SLIDE_INTERVAL);
+  }, [banners.length]);
 
   useEffect(() => {
-    if (banners.length <= 1) return;
-    startTimer();
+    if (banners.length > 1) startTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [banners.length]);
 
-  const handleMomentumEnd = (e: any) => {
-    const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH);
-    indexRef.current = idx;
-    setActiveIndex(idx);
-    startTimer();
-  };
+  const handleBannerPress = useCallback((banner: Banner) => {
+    const link = banner.link ?? '';
+    const productMatch = link.match(/(?:\/products\/|product:)([^/?#]+)/);
+    if (productMatch) { navigation.navigate('ProductDetail', { slug: productMatch[1] }); return; }
+    const categoryMatch = link.match(/(?:\/categories\/|category:)(\d+)/);
+    if (categoryMatch) { navigation.navigate('ProductList', { categoryId: Number(categoryMatch[1]), title: banner.title }); return; }
+    if (link.startsWith('http')) { Linking.openURL(link); return; }
+    // Fallback: always go to product list
+    navigation.navigate('ProductList', { title: banner.title || 'Shop Now' });
+  }, [navigation]);
+
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 51 });
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems[0]) {
+      indexRef.current = viewableItems[0].index ?? 0;
+      setActiveIndex(viewableItems[0].index ?? 0);
+    }
+  });
 
   if (banners.length === 0) {
     return (
       <View style={styles.bannerWrapper}>
-        <View style={styles.bannerItem}>
+        <TouchableOpacity style={styles.bannerItem} activeOpacity={0.95} onPress={() => navigation.navigate('ProductList', { title: 'All Products' })}>
           <View style={[styles.bannerInner, { backgroundColor: COLORS.primary }]}>
             <View style={styles.bannerBg}>
               <Text style={styles.bannerTitle}>Mega Sale — Up to 50% Off!</Text>
               <Text style={styles.bannerSubtitle}>Shop top brands at unbeatable prices</Text>
+              <View style={styles.bannerBtn}><Text style={styles.bannerBtnText}>Shop Now</Text></View>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View style={styles.bannerWrapper}>
-      <ScrollView
-        ref={scrollRef}
+      <FlatList
+        ref={flatRef}
+        data={banners}
         horizontal
         pagingEnabled
-        scrollEventThrottle={16}
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleMomentumEnd}
+        keyExtractor={(item) => String(item.id)}
+        getItemLayout={(_, index) => ({ length: BANNER_WIDTH, offset: BANNER_WIDTH * index, index })}
+        viewabilityConfig={viewabilityConfig.current}
+        onViewableItemsChanged={onViewableItemsChanged.current}
         onScrollBeginDrag={() => { if (timerRef.current) clearInterval(timerRef.current); }}
-      >
-        {banners.map((banner) => (
-          <TouchableOpacity
-            key={banner.id}
-            activeOpacity={0.95}
-            style={styles.bannerItem}
-            onPress={() => onPress(banner)}
-          >
-            <BannerItem banner={banner} />
+        onMomentumScrollEnd={startTimer}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.bannerItem} activeOpacity={0.92} onPress={() => handleBannerPress(item)}>
+            <BannerItem banner={item} />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Dot indicators */}
+        )}
+      />
       {banners.length > 1 && (
         <View style={styles.dotsRow}>
           {banners.map((_, i) => (
-            <TouchableOpacity key={i} onPress={() => { slideTo(i); startTimer(); }}>
-              <View style={[styles.dot, i === activeIndex && styles.dotActive]} />
-            </TouchableOpacity>
+            <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
           ))}
         </View>
       )}
@@ -415,22 +420,7 @@ export default function HomeScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
         {/* ── Auto-sliding Banner ── */}
-        <AutoBannerSlider
-          banners={banners}
-          onPress={(b) => {
-            if (!b.link) return;
-            // product links: /products/slug or product:slug
-            const productMatch = b.link.match(/(?:\/products\/|product:)([^/?#]+)/);
-            if (productMatch) { goToProduct(productMatch[1]); return; }
-            // category links: /categories/id or category:id
-            const categoryMatch = b.link.match(/(?:\/categories\/|category:)(\d+)/);
-            if (categoryMatch) { goToList({ categoryId: Number(categoryMatch[1]), title: b.title }); return; }
-            // external URL
-            if (b.link.startsWith('http')) { Linking.openURL(b.link); return; }
-            // fallback: search/list with banner title
-            goToList({ title: b.title });
-          }}
-        />
+        <AutoBannerSlider banners={banners} navigation={navigation} />
 
         {/* ── Categories ── */}
         <SectionHeader title="Shop by Category" />

@@ -8,6 +8,7 @@ import { usePaystack } from 'react-native-paystack-webview';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { ordersApi } from '../../api/orders';
 import { paymentsApi } from '../../api/payments';
+// Note: payment flow uses popup.checkout() directly — no backend pre-initialization
 import { Address } from '../../types';
 import { COLORS, SIZES } from '../../constants';
 import { formatCurrency, getErrorMessage } from '../../utils/currency';
@@ -111,25 +112,32 @@ export default function CheckoutScreen({ navigation }: any) {
       const order = res.data.data;
 
       if (paymentMethod === 'paystack') {
-        const payRes = await paymentsApi.initialize(order.order_number);
+        // Generate a unique reference tied to this order — no backend pre-initialization
+        // needed. The PaystackProvider (with real public key from settings) opens the
+        // Paystack hosted checkout. On success we verify server-side.
+        const reference = `SP_${order.order_number}_${Date.now()}`;
         pendingOrderRef.current = order.order_number;
-        paystackRefRef.current = payRes.data.reference;
+        paystackRefRef.current = reference;
         setIsLoading(false);
+
         popup.checkout({
           email: user?.email ?? '',
-          amount: total * 100, // Paystack expects kobo
-          reference: payRes.data.reference,
+          amount: Math.round(total * 100), // kobo, must be integer
+          reference,
+          metadata: { order_number: order.order_number, user_id: user?.id },
           onSuccess: async () => {
             setIsLoading(true);
             try {
-              await paymentsApi.verify(paystackRefRef.current);
+              await paymentsApi.verify(paystackRefRef.current, pendingOrderRef.current);
               navigation.replace('OrderSuccess', { orderNumber: pendingOrderRef.current });
             } catch {
-              showAlert('warning-outline', COLORS.danger, 'Verification Error', 'Payment made but could not verify. Please contact support with reference: ' + paystackRefRef.current);
+              showAlert('warning-outline', COLORS.danger, 'Verification Error',
+                'Payment was received but could not be confirmed automatically. Please contact support with reference: ' + paystackRefRef.current);
             } finally { setIsLoading(false); }
           },
           onCancel: () => {
-            showAlert('information-circle', COLORS.primary, 'Payment Cancelled', 'Your order was created but payment was not completed. You can retry from your Orders page.');
+            showAlert('information-circle', COLORS.primary, 'Payment Cancelled',
+              'Your order was placed but payment was not completed. You can retry payment from your Orders page.');
           },
         });
         return;
