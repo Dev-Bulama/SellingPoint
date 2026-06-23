@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Notifications\PasswordResetOtpNotification;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -27,6 +28,7 @@ class AuthController extends Controller
         ]);
 
         $user->assignRole('customer');
+        $user->notify(new WelcomeNotification());
 
         $token = $user->createToken('mobile')->plainTextToken;
 

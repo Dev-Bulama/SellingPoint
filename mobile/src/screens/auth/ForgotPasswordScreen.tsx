@@ -15,8 +15,13 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     if (!email) { setError('Enter your email address'); return; }
     setError(''); setIsLoading(true);
     try {
-      await authApi.forgotPassword(email.trim().toLowerCase());
+      const trimmedEmail = email.trim().toLowerCase();
+      await authApi.forgotPassword(trimmedEmail);
       setSuccess(true);
+      // Navigate to reset password screen after a short delay so user sees the success message
+      setTimeout(() => {
+        navigation.navigate('ResetPassword', { email: trimmedEmail });
+      }, 1500);
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {

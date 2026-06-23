@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 import apiClient from '../../api/client';
 import { COLORS, SIZES } from '../../constants';
 import AppAlert from '../../components/AppAlert';
@@ -21,6 +22,7 @@ interface CmsSettings {
   whatsapp_number?: string;
   support_email?: string;
   business_hours?: string;
+  support_chat_script?: string;
 }
 
 const ISSUE_TYPES = [
@@ -176,6 +178,7 @@ export default function SupportScreen({ navigation }: any) {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState<{
     icon: string; iconColor: string; title: string; message: string;
@@ -239,6 +242,11 @@ export default function SupportScreen({ navigation }: any) {
   };
 
   const businessHours = settings.business_hours ?? 'Mon–Fri, 9 AM – 6 PM WAT';
+  const chatScript = settings.support_chat_script ?? '';
+
+  const chatHtml = chatScript
+    ? `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box;}body{background:transparent;}</style></head><body>${chatScript}</body></html>`
+    : '';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -334,6 +342,47 @@ export default function SupportScreen({ navigation }: any) {
         onSubmit={handleSubmitReport}
         submitting={submittingReport}
       />
+
+      {/* Live Chat FAB — only shown when a chat script is configured */}
+      {!!chatScript && !showReportModal && (
+        <TouchableOpacity style={styles.chatFab} onPress={() => setShowChatModal(true)} activeOpacity={0.85}>
+          <IonIcon name="chatbubbles-outline" size={24} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
+
+      {/* Chatbot modal — full screen WebView above the bottom nav */}
+      <Modal
+        visible={showChatModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowChatModal(false)}
+      >
+        <SafeAreaView style={styles.chatModalContainer} edges={['top']}>
+          <View style={styles.chatModalHeader}>
+            <Text style={styles.chatModalTitle}>Live Chat</Text>
+            <TouchableOpacity onPress={() => setShowChatModal(false)} style={styles.chatModalClose}>
+              <IonIcon name="close" size={22} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
+          <WebView
+            source={{ html: chatHtml }}
+            style={{ flex: 1 }}
+            javaScriptEnabled
+            domStorageEnabled
+            allowsInlineMediaPlayback
+            mediaPlaybackRequiresUserAction={false}
+            originWhitelist={['*']}
+            onShouldStartLoadWithRequest={(req) => {
+              // Allow the initial load; open external navigations in device browser
+              if (req.navigationType === 'click') {
+                Linking.openURL(req.url).catch(() => {});
+                return false;
+              }
+              return true;
+            }}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -475,4 +524,33 @@ const styles = StyleSheet.create({
   },
   submitButtonDisabled: { opacity: 0.7 },
   submitButtonText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
+  // Live chat
+  chatFab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  },
+  chatModalContainer: { flex: 1, backgroundColor: COLORS.white },
+  chatModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SIZES.screenPadding,
+    paddingVertical: SIZES.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.white,
+  },
+  chatModalTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: COLORS.text },
+  chatModalClose: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 });

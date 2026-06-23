@@ -29,6 +29,7 @@ class Settings extends Page
             'tax_percentage', 'about_app',
             'active_environment', 'local_api_url', 'production_api_url',
             'production_domain', 'force_production',
+            'support_chat_script',
         ];
         foreach ($keys as $key) {
             $this->data[$key] = Setting::get($key, '');
@@ -79,6 +80,15 @@ class Settings extends Page
                     Forms\Components\TextInput::make('min_app_version')->label('Minimum App Version'),
                     Forms\Components\Textarea::make('force_update_message')->rows(2)->label('Force Update Message'),
                 ])->columns(2),
+
+                Forms\Components\Tabs\Tab::make('Support')->schema([
+                    Forms\Components\Textarea::make('support_chat_script')
+                        ->label('Live Chat Script')
+                        ->rows(6)
+                        ->placeholder('<script>/* Paste your chatbot embed script here */</script>')
+                        ->helperText('Paste the full embed script from your chat provider (e.g. Tidio, Crisp, Intercom, Tawk.to). The bubble will appear on the Support page of the mobile app.')
+                        ->columnSpanFull(),
+                ])->columns(1),
 
                 Forms\Components\Tabs\Tab::make('Environment')->schema([
                     Forms\Components\Select::make('active_environment')
