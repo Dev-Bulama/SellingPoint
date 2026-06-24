@@ -6,6 +6,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Models\Order;
+use App\Models\Setting;
 use App\Observers\OrderObserver;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Order::observe(OrderObserver::class);
 
+        $this->applyMailConfigFromSettings();
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
@@ -33,5 +36,26 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
         });
+    }
+
+    private function applyMailConfigFromSettings(): void
+    {
+        try {
+            $host = Setting::get('mail_host', '');
+            if (empty($host)) return;
+
+            config([
+                'mail.default'                 => Setting::get('mail_mailer', 'smtp'),
+                'mail.mailers.smtp.host'       => $host,
+                'mail.mailers.smtp.port'       => (int) Setting::get('mail_port', 587),
+                'mail.mailers.smtp.encryption' => Setting::get('mail_encryption', 'tls'),
+                'mail.mailers.smtp.username'   => Setting::get('mail_username', ''),
+                'mail.mailers.smtp.password'   => Setting::get('mail_password', ''),
+                'mail.from.address'            => Setting::get('mail_from_address', ''),
+                'mail.from.name'               => Setting::get('mail_from_name', config('app.name')),
+            ]);
+        } catch (\Throwable) {
+            // DB not ready (migrations, fresh install) — skip silently
+        }
     }
 }

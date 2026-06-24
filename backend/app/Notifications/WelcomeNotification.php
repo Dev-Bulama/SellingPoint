@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -17,15 +18,30 @@ class WelcomeNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $appName = \App\Models\Setting::get('app_name', 'SellingPoint');
+        $appName = Setting::get('app_name', 'SellingPoint');
+        $vars    = ['{app_name}' => $appName, '{user_name}' => $notifiable->name];
 
-        return (new MailMessage)
-            ->subject("Welcome to {$appName}! Your account is ready")
-            ->greeting('Hello ' . $notifiable->name . ',')
-            ->line("Thank you for joining {$appName}! We're excited to have you.")
-            ->line('Your account has been created successfully. You can now browse thousands of products, track your orders, and enjoy a seamless shopping experience.')
+        $subject = Setting::get('email_welcome_subject', '')
+            ?: "Welcome to {$appName}! Your account is ready";
+        $body    = Setting::get('email_welcome_body', '')
+            ?: "Thank you for joining {$appName}! We're excited to have you.\n\nYour account is ready. Browse thousands of products and enjoy a seamless shopping experience.\n\nIf you need help, our support team is always here.";
+
+        $subject = strtr($subject, $vars);
+        $body    = strtr($body, $vars);
+
+        $mail = (new MailMessage)
+            ->subject($subject)
+            ->greeting('Hello ' . $notifiable->name . ',');
+
+        foreach (explode("\n\n", $body) as $paragraph) {
+            $paragraph = trim($paragraph);
+            if ($paragraph !== '') {
+                $mail->line($paragraph);
+            }
+        }
+
+        return $mail
             ->action('Start Shopping', config('app.url'))
-            ->line('If you have any questions, our support team is always here to help.')
             ->salutation("Welcome aboard, The {$appName} Team");
     }
 }
