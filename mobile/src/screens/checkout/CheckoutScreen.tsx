@@ -27,6 +27,7 @@ export default function CheckoutScreen({ navigation }: any) {
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [orderNotes, setOrderNotes] = useState('');
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const paystackRefRef = useRef('');
   const pendingOrderRef = useRef('');
 
@@ -93,12 +94,18 @@ export default function CheckoutScreen({ navigation }: any) {
   };
 
   const handlePlaceOrder = async () => {
+    if (orderPlaced) return; // prevent double-tap
     if (!selectedAddress) {
       showAlert('location-outline', COLORS.primary, 'No Address', 'Please select a delivery address.');
       return;
     }
     if (!cart || cart.items.length === 0) {
-      showAlert('cart-outline', COLORS.danger, 'Empty Cart', 'Your cart is empty.');
+      // Cart is empty — if an order was recently placed navigate to it
+      if (pendingOrderRef.current) {
+        navigation.replace('OrderSuccess', { orderNumber: pendingOrderRef.current });
+      } else {
+        showAlert('cart-outline', COLORS.danger, 'Empty Cart', 'Your cart is empty.');
+      }
       return;
     }
     setIsLoading(true);
@@ -110,18 +117,18 @@ export default function CheckoutScreen({ navigation }: any) {
         notes: orderNotes || undefined,
       });
       const order = res.data.data;
+      pendingOrderRef.current = order.order_number;
+      setOrderPlaced(true);
 
       if (paymentMethod === 'paystack') {
-        // Use the authoritative order total from the backend (includes shipping, tax, discounts)
         const orderTotal = order.total as number;
         const reference = `SP_${order.order_number}_${Date.now()}`;
-        pendingOrderRef.current = order.order_number;
         paystackRefRef.current = reference;
         setIsLoading(false);
 
         popup.checkout({
           email: user?.email ?? '',
-          amount: orderTotal, // library multiplies by 100 internally — pass naira, not kobo
+          amount: orderTotal,
           reference,
           metadata: { order_number: order.order_number, user_id: user?.id },
           onSuccess: async () => {
@@ -136,15 +143,26 @@ export default function CheckoutScreen({ navigation }: any) {
           },
           onCancel: () => {
             showAlert('information-circle', COLORS.primary, 'Payment Cancelled',
-              'Your order was placed but payment was not completed. You can retry payment from your Orders page.');
+              'Your order was placed but payment was not completed. You can complete payment from your Orders page.',
+              [
+                { text: 'View My Orders', onPress: () => navigation.replace('OrderSuccess', { orderNumber: pendingOrderRef.current }), style: 'primary' },
+                { text: 'Dismiss' },
+              ]);
           },
         });
         return;
       } else {
         navigation.replace('OrderSuccess', { orderNumber: order.order_number });
       }
-    } catch (e) {
-      showAlert('close-circle', COLORS.danger, 'Order Failed', getErrorMessage(e));
+    } catch (e: any) {
+      const msg = e?.response?.data?.message ?? getErrorMessage(e);
+      // Cart was already cleared — a prior order was placed
+      if (msg?.toLowerCase().includes('cart is empty') && pendingOrderRef.current) {
+        navigation.replace('OrderSuccess', { orderNumber: pendingOrderRef.current });
+        return;
+      }
+      setOrderPlaced(false); // allow retry on genuine errors
+      showAlert('close-circle', COLORS.danger, 'Order Failed', msg);
     } finally { setIsLoading(false); }
   };
 
@@ -296,7 +314,7 @@ export default function CheckoutScreen({ navigation }: any) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.placeOrderBtn} onPress={handlePlaceOrder} disabled={isLoading}>
+        <TouchableOpacity style={[styles.placeOrderBtn, orderPlaced && { opacity: 0.6 }]} onPress={handlePlaceOrder} disabled={isLoading || orderPlaced}>
           {isLoading ? (
             <ActivityIndicator color={COLORS.white} />
           ) : (
