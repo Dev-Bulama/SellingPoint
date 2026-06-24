@@ -91,10 +91,14 @@ class ProductController extends Controller
 
     public function featured(): JsonResponse
     {
-        $products = Cache::remember('api:products:featured', 600, fn() =>
-            Product::active()->featured()->inStock()
-                ->with(['images', 'category'])->limit(20)->get()
-        );
+        try {
+            $products = Cache::remember('api:products:featured', 600, fn() =>
+                Product::active()->featured()->inStock()
+                    ->with(['images', 'category'])->limit(20)->get()
+            );
+        } catch (\Throwable $e) {
+            $products = collect();
+        }
         return response()->json(['data' => ProductResource::collection($products)]);
     }
 
