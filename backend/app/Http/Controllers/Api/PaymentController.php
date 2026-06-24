@@ -130,11 +130,15 @@ class PaymentController extends Controller
         }
 
         if ($status === 'success') {
-            $order->update([
-                'payment_status' => 'paid',
-                'status'         => 'confirmed',
-                'confirmed_at'   => now(),
-            ]);
+            try {
+                $order->update([
+                    'payment_status' => 'paid',
+                    'status'         => 'confirmed',
+                    'confirmed_at'   => now(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Order confirm failed after payment', ['order' => $order->id, 'error' => $e->getMessage()]);
+            }
         }
 
         return response()->json([

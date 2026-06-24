@@ -20,7 +20,11 @@ class OrderObserver
     {
         if ($order->wasChanged('status') && $order->user) {
             $oldStatus = $order->_previousStatus ?? null;
-            $order->user->notify(new OrderStatusChangedNotification($order, $oldStatus ?? ''));
+            try {
+                $order->user->notify(new OrderStatusChangedNotification($order, $oldStatus ?? ''));
+            } catch (\Throwable) {
+                // Mail not configured — skip silently, order update still succeeds
+            }
         }
     }
 }
