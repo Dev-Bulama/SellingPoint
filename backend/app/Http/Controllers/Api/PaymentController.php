@@ -82,33 +82,52 @@ class PaymentController extends Controller
             ->where('order_number', $request->order_number)
             ->firstOrFail();
 
-        // Verify with Paystack
-        $response = Http::withToken($this->paystackSecretKey())
-            ->get("https://api.paystack.co/transaction/verify/{$request->reference}");
-
-        if (!$response->successful()) {
-            Log::error('Paystack verify HTTP error', ['ref' => $request->reference, 'status' => $response->status()]);
-            return response()->json(['message' => 'Could not reach payment gateway'], 502);
+        $secretKey = $this->paystackSecretKey();
+        if (empty($secretKey)) {
+            Log::error('Paystack secret key not configured');
+            return response()->json(['message' => 'Payment gateway not configured. Please contact support.'], 500);
         }
 
-        $data   = $response->json('data');
+        // Verify with Paystack
+        try {
+            $response = Http::withToken($secretKey)
+                ->timeout(30)
+                ->get("https://api.paystack.co/transaction/verify/{$request->reference}");
+        } catch (\Throwable $e) {
+            Log::error('Paystack verify exception', ['ref' => $request->reference, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Could not reach payment gateway. Please try again.'], 502);
+        }
+
+        if (!$response->successful()) {
+            Log::error('Paystack verify HTTP error', [
+                'ref' => $request->reference, 'status' => $response->status(), 'body' => $response->body(),
+            ]);
+            return response()->json(['message' => 'Payment gateway returned an error: ' . ($response->json('message') ?? 'Unknown error')], 502);
+        }
+
+        $data   = $response->json('data') ?? [];
         $status = $data['status'] ?? 'failed';
 
         // Upsert payment record
-        $payment = Payment::updateOrCreate(
-            ['reference' => $request->reference],
-            [
-                'order_id'         => $order->id,
-                'user_id'          => $request->user()->id,
-                'amount'           => ($data['amount'] ?? 0) / 100,
-                'currency'         => $data['currency'] ?? 'NGN',
-                'status'           => $status === 'success' ? 'success' : 'failed',
-                'gateway_response' => $data,
-                'channel'          => $data['channel'] ?? null,
-                'paid_at'          => $status === 'success' ? now() : null,
-                'ip_address'       => $request->ip(),
-            ]
-        );
+        try {
+            $payment = Payment::updateOrCreate(
+                ['reference' => $request->reference],
+                [
+                    'order_id'         => $order->id,
+                    'user_id'          => $request->user()->id,
+                    'amount'           => ($data['amount'] ?? 0) / 100,
+                    'currency'         => $data['currency'] ?? 'NGN',
+                    'status'           => $status === 'success' ? 'success' : 'failed',
+                    'gateway_response' => $data,
+                    'channel'          => $data['channel'] ?? null,
+                    'paid_at'          => $status === 'success' ? now() : null,
+                    'ip_address'       => $request->ip(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error('Payment record save error', ['ref' => $request->reference, 'error' => $e->getMessage()]);
+            $payment = (object)['status' => $status === 'success' ? 'success' : 'failed'];
+        }
 
         if ($status === 'success') {
             $order->update([
