@@ -41,7 +41,7 @@ class CmsController extends Controller
             'app_name', 'app_logo', 'support_email', 'support_phone', 'whatsapp_number',
             'currency', 'currency_symbol', 'paystack_public_key', 'cash_on_delivery_enabled',
             'maintenance_mode', 'min_app_version', 'force_update_message',
-            'tax_percentage', 'about_app',
+            'tax_percentage', 'about_app', 'support_chat_script',
         ];
 
         $settings = [];
