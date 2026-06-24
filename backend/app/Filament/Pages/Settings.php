@@ -32,6 +32,17 @@ class Settings extends Page
             'support_chat_script',
             'brand_color', 'brand_color_dark', 'brand_color_light',
             'play_store_url', 'app_store_url',
+            // Email SMTP
+            'mail_mailer', 'mail_host', 'mail_port',
+            'mail_username', 'mail_password', 'mail_encryption',
+            'mail_from_address', 'mail_from_name',
+            // Email Templates
+            'email_welcome_subject', 'email_welcome_body',
+            'email_order_confirmed_subject', 'email_order_confirmed_body',
+            'email_order_processing_subject', 'email_order_processing_body',
+            'email_order_shipped_subject', 'email_order_shipped_body',
+            'email_order_delivered_subject', 'email_order_delivered_body',
+            'email_order_cancelled_subject', 'email_order_cancelled_body',
         ];
         foreach ($keys as $key) {
             $this->data[$key] = Setting::get($key, '');
@@ -110,6 +121,139 @@ class Settings extends Page
                         ->columnSpanFull(),
                 ])->columns(1),
 
+                Forms\Components\Tabs\Tab::make('Email (SMTP)')->schema([
+                    Forms\Components\Section::make('Mail Driver')->schema([
+                        Forms\Components\Select::make('mail_mailer')
+                            ->label('Mail Driver')
+                            ->options([
+                                'smtp'     => 'SMTP',
+                                'mailgun'  => 'Mailgun',
+                                'ses'      => 'Amazon SES',
+                                'sendgrid' => 'SendGrid',
+                                'log'      => 'Log (Testing only)',
+                            ])
+                            ->default('smtp')
+                            ->required()
+                            ->helperText('Select your email sending service. Use "Log" to test without sending real emails.'),
+                    ])->columns(1)->collapsible(false),
+
+                    Forms\Components\Section::make('SMTP Server')->schema([
+                        Forms\Components\TextInput::make('mail_host')
+                            ->label('SMTP Host')
+                            ->placeholder('smtp.gmail.com')
+                            ->helperText('Gmail: smtp.gmail.com | Zoho: smtp.zoho.com | Mailgun: smtp.mailgun.org'),
+                        Forms\Components\TextInput::make('mail_port')
+                            ->label('SMTP Port')
+                            ->numeric()
+                            ->placeholder('587')
+                            ->helperText('TLS: 587 | SSL: 465 | Plain: 25'),
+                        Forms\Components\Select::make('mail_encryption')
+                            ->label('Encryption')
+                            ->options([
+                                'tls'  => 'TLS (Recommended)',
+                                'ssl'  => 'SSL',
+                                ''     => 'None',
+                            ])
+                            ->default('tls'),
+                        Forms\Components\TextInput::make('mail_username')
+                            ->label('SMTP Username')
+                            ->placeholder('your@email.com'),
+                        Forms\Components\TextInput::make('mail_password')
+                            ->label('SMTP Password / App Password')
+                            ->password()
+                            ->revealable()
+                            ->helperText('For Gmail, generate an App Password at myaccount.google.com → Security → 2-Step Verification → App passwords.'),
+                    ])->columns(2)->collapsible()->collapsed(false),
+
+                    Forms\Components\Section::make('Sender Identity')->schema([
+                        Forms\Components\TextInput::make('mail_from_address')
+                            ->label('From Email Address')
+                            ->email()
+                            ->placeholder('noreply@sellingpointshop.com'),
+                        Forms\Components\TextInput::make('mail_from_name')
+                            ->label('From Name')
+                            ->placeholder('SellingPoint'),
+                    ])->columns(2)->collapsible()->collapsed(false),
+                ])->columns(1),
+
+                Forms\Components\Tabs\Tab::make('Email Templates')->schema([
+                    Forms\Components\Section::make('Welcome Email')->schema([
+                        Forms\Components\TextInput::make('email_welcome_subject')
+                            ->label('Subject')
+                            ->placeholder('Welcome to {app_name}! Your account is ready')
+                            ->helperText('Available variables: {app_name}, {user_name}')
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('email_welcome_body')
+                            ->label('Body')
+                            ->rows(5)
+                            ->placeholder("Thank you for joining {app_name}! We're excited to have you.\n\nYour account is ready. Browse thousands of products and enjoy a seamless shopping experience.\n\nIf you need help, our support team is always here.")
+                            ->helperText('Available variables: {app_name}, {user_name}')
+                            ->columnSpanFull(),
+                    ])->collapsible()->collapsed(false),
+
+                    Forms\Components\Section::make('Order Confirmed')->schema([
+                        Forms\Components\TextInput::make('email_order_confirmed_subject')
+                            ->label('Subject')
+                            ->placeholder('Order {order_number} Confirmed!')
+                            ->helperText('Variables: {app_name}, {user_name}, {order_number}, {order_total}')
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('email_order_confirmed_body')
+                            ->label('Body')
+                            ->rows(4)
+                            ->placeholder("We have received your order and are preparing it for processing.")
+                            ->helperText('Variables: {app_name}, {user_name}, {order_number}, {order_total}')
+                            ->columnSpanFull(),
+                    ])->collapsible()->collapsed(true),
+
+                    Forms\Components\Section::make('Order Processing')->schema([
+                        Forms\Components\TextInput::make('email_order_processing_subject')
+                            ->label('Subject')
+                            ->placeholder('Order {order_number} is Being Processed')
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('email_order_processing_body')
+                            ->label('Body')
+                            ->rows(4)
+                            ->placeholder("Our team is packing your items and getting them ready for shipment.")
+                            ->columnSpanFull(),
+                    ])->collapsible()->collapsed(true),
+
+                    Forms\Components\Section::make('Order Shipped')->schema([
+                        Forms\Components\TextInput::make('email_order_shipped_subject')
+                            ->label('Subject')
+                            ->placeholder('Order {order_number} Has Been Shipped!')
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('email_order_shipped_body')
+                            ->label('Body')
+                            ->rows(4)
+                            ->placeholder("Great news — your order is on its way! Your package has been dispatched and is heading to you.")
+                            ->columnSpanFull(),
+                    ])->collapsible()->collapsed(true),
+
+                    Forms\Components\Section::make('Order Delivered')->schema([
+                        Forms\Components\TextInput::make('email_order_delivered_subject')
+                            ->label('Subject')
+                            ->placeholder('Order {order_number} Delivered')
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('email_order_delivered_body')
+                            ->label('Body')
+                            ->rows(4)
+                            ->placeholder("We hope you enjoy your purchase! If anything is wrong, please contact our support team.")
+                            ->columnSpanFull(),
+                    ])->collapsible()->collapsed(true),
+
+                    Forms\Components\Section::make('Order Cancelled')->schema([
+                        Forms\Components\TextInput::make('email_order_cancelled_subject')
+                            ->label('Subject')
+                            ->placeholder('Order {order_number} Cancelled')
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('email_order_cancelled_body')
+                            ->label('Body')
+                            ->rows(4)
+                            ->placeholder("Your order was cancelled. If you have questions, please contact support.")
+                            ->columnSpanFull(),
+                    ])->collapsible()->collapsed(true),
+                ])->columns(1),
+
                 Forms\Components\Tabs\Tab::make('Environment')->schema([
                     Forms\Components\Select::make('active_environment')
                         ->label('Active Environment')
@@ -156,6 +300,20 @@ class Settings extends Page
         foreach ($data as $key => $value) {
             Setting::set($key, $value);
         }
+
+        // Apply mail config at runtime so emails use the new settings immediately
+        $mailer = $data['mail_mailer'] ?? 'smtp';
+        config([
+            'mail.default'                              => $mailer,
+            'mail.mailers.smtp.host'                    => $data['mail_host'] ?? '',
+            'mail.mailers.smtp.port'                    => $data['mail_port'] ?? 587,
+            'mail.mailers.smtp.encryption'              => $data['mail_encryption'] ?? 'tls',
+            'mail.mailers.smtp.username'                => $data['mail_username'] ?? '',
+            'mail.mailers.smtp.password'                => $data['mail_password'] ?? '',
+            'mail.from.address'                         => $data['mail_from_address'] ?? '',
+            'mail.from.name'                            => $data['mail_from_name'] ?? config('app.name'),
+        ]);
+
         Notification::make()->title('Settings saved successfully')->success()->send();
     }
 

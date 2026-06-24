@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -22,58 +23,69 @@ class OrderStatusChangedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $appName  = \App\Models\Setting::get('app_name', 'SellingPoint');
-        $status   = $this->order->status;
-        $number   = $this->order->order_number;
+        $appName = Setting::get('app_name', 'SellingPoint');
+        $status  = $this->order->status;
+        $number  = $this->order->order_number;
+        $total   = number_format($this->order->total, 2);
 
-        [$subject, $headline, $detail] = match ($status) {
+        $vars = [
+            '{app_name}'     => $appName,
+            '{user_name}'    => $notifiable->name,
+            '{order_number}' => $number,
+            '{order_total}'  => $total,
+        ];
+
+        // Default subject + body per status
+        [$defaultSubject, $defaultBody] = match ($status) {
             'confirmed'  => [
                 "Order {$number} Confirmed!",
-                'Your order has been confirmed.',
-                'We have received your order and are preparing it for processing.',
+                "We have received your order and are preparing it for processing.",
             ],
             'processing' => [
                 "Order {$number} is Being Processed",
-                'Your order is now being processed.',
-                'Our team is packing your items and getting them ready for shipment.',
+                "Our team is packing your items and getting them ready for shipment.",
             ],
             'shipped'    => [
                 "Order {$number} Has Been Shipped!",
-                'Great news — your order is on its way!',
-                'Your package has been dispatched and is on its way to you.',
+                "Great news — your order is on its way!\n\nYour package has been dispatched and is heading to you. You will receive it within the estimated delivery window.",
             ],
             'delivered'  => [
                 "Order {$number} Delivered",
-                'Your order has been delivered.',
-                'We hope you enjoy your purchase! If anything is wrong, please contact our support team.',
+                "We hope you enjoy your purchase! If anything is wrong, please contact our support team.",
             ],
             'cancelled'  => [
                 "Order {$number} Cancelled",
-                'Your order has been cancelled.',
                 $this->order->cancellation_reason
                     ? 'Reason: ' . $this->order->cancellation_reason
-                    : 'Your order was cancelled. If you have questions, please contact support.',
+                    : "Your order was cancelled. If you have questions, please contact support.",
             ],
             default => [
                 "Order {$number} Update",
-                'Your order status has been updated.',
                 "Your order is now: {$status}.",
             ],
         };
 
+        $settingPrefix = 'email_order_' . $status;
+        $subject = Setting::get("{$settingPrefix}_subject", '') ?: $defaultSubject;
+        $body    = Setting::get("{$settingPrefix}_body", '')    ?: $defaultBody;
+
+        $subject = strtr($subject, $vars);
+        $body    = strtr($body, $vars);
+
         $mail = (new MailMessage)
             ->subject($subject)
-            ->greeting('Hello ' . $notifiable->name . ',')
-            ->line($headline)
-            ->line($detail)
-            ->line("**Order:** {$number}")
-            ->line('**Total:** ' . number_format($this->order->total, 2));
+            ->greeting('Hello ' . $notifiable->name . ',');
 
-        if ($status === 'shipped') {
-            $mail->line('You will receive your package within the estimated delivery window.');
+        foreach (explode("\n\n", $body) as $paragraph) {
+            $paragraph = trim($paragraph);
+            if ($paragraph !== '') {
+                $mail->line($paragraph);
+            }
         }
 
         return $mail
+            ->line("**Order:** {$number}")
+            ->line("**Total:** ₦{$total}")
             ->salutation("Thank you for shopping with {$appName}!");
     }
 }
