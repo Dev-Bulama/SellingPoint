@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -244,8 +244,16 @@ export default function SupportScreen({ navigation }: any) {
   const businessHours = settings.business_hours ?? 'Mon–Fri, 9 AM – 6 PM WAT';
   const chatScript = settings.support_chat_script ?? '';
 
+  // Extract the script's origin domain to use as baseUrl so the widget's
+  // API calls are not blocked by same-origin restrictions in the WebView.
+  const chatBaseUrl = useMemo(() => {
+    if (!chatScript) return '';
+    const m = chatScript.match(/src=["'](https?:\/\/[^/"']+)/i);
+    return m ? m[1] : '';
+  }, [chatScript]);
+
   const chatHtml = chatScript
-    ? `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box;}body{background:transparent;}</style></head><body>${chatScript}</body></html>`
+    ? `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box;}html,body{width:100%;height:100%;background:#fff;}</style></head><body>${chatScript}</body></html>`
     : '';
 
   return (
@@ -365,16 +373,18 @@ export default function SupportScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
           <WebView
-            source={{ html: chatHtml }}
+            source={{ html: chatHtml, baseUrl: chatBaseUrl || 'about:blank' }}
             style={{ flex: 1 }}
             javaScriptEnabled
             domStorageEnabled
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
             originWhitelist={['*']}
+            mixedContentMode="always"
+            allowFileAccess
+            allowUniversalAccessFromFileURLs
             onShouldStartLoadWithRequest={(req) => {
-              // Allow the initial load; open external navigations in device browser
-              if (req.navigationType === 'click') {
+              if (req.navigationType === 'click' && req.url !== 'about:blank') {
                 Linking.openURL(req.url).catch(() => {});
                 return false;
               }
