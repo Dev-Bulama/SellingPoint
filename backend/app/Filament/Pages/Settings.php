@@ -30,6 +30,8 @@ class Settings extends Page
             'active_environment', 'local_api_url', 'production_api_url',
             'production_domain', 'force_production',
             'support_chat_script',
+            'brand_color', 'brand_color_dark', 'brand_color_light',
+            'play_store_url', 'app_store_url',
         ];
         foreach ($keys as $key) {
             $this->data[$key] = Setting::get($key, '');
@@ -62,6 +64,24 @@ class Settings extends Page
                     Forms\Components\TextInput::make('tax_percentage')->numeric()->default(0)->suffix('%'),
                     Forms\Components\Toggle::make('cash_on_delivery_enabled')->label('Cash on Delivery'),
                     Forms\Components\Toggle::make('maintenance_mode'),
+                    Forms\Components\TextInput::make('brand_color')
+                        ->label('Brand Color (Hex)')
+                        ->placeholder('#F97316')
+                        ->helperText('Primary brand color used on the website landing page. Example: #F97316')
+                        ->default('#F97316'),
+                    Forms\Components\TextInput::make('brand_color_dark')
+                        ->label('Brand Color Dark (Hex)')
+                        ->placeholder('#EA6C0B')
+                        ->helperText('Darker shade for hover/gradient effects.')
+                        ->default('#EA6C0B'),
+                    Forms\Components\TextInput::make('play_store_url')
+                        ->label('Google Play Store URL')
+                        ->url()
+                        ->placeholder('https://play.google.com/store/apps/details?id=com.yourapp'),
+                    Forms\Components\TextInput::make('app_store_url')
+                        ->label('Apple App Store URL')
+                        ->url()
+                        ->placeholder('https://apps.apple.com/app/your-app'),
                 ])->columns(2),
 
                 Forms\Components\Tabs\Tab::make('Paystack')->schema([
@@ -108,12 +128,12 @@ class Settings extends Page
                     Forms\Components\TextInput::make('production_api_url')
                         ->label('Production API URL')
                         ->url()
-                        ->placeholder('https://sellingpoint.ng/api/v1')
+                        ->placeholder('https://sellingpointshop.com/api/v1')
                         ->helperText('The live backend API URL for release builds.'),
                     Forms\Components\TextInput::make('production_domain')
                         ->label('Production Domain')
                         ->url()
-                        ->placeholder('https://sellingpoint.ng')
+                        ->placeholder('https://sellingpointshop.com')
                         ->helperText('Root domain (used for image URLs and deep links).'),
                     Forms\Components\Placeholder::make('active_api_url_preview')
                         ->label('Currently Active API URL')
@@ -121,7 +141,7 @@ class Settings extends Page
                             $env   = Setting::get('active_environment', 'local');
                             $force = (bool) Setting::get('force_production', false);
                             $url   = ($force || $env === 'production')
-                                ? Setting::get('production_api_url', 'https://sellingpoint.ng/api/v1')
+                                ? Setting::get('production_api_url', 'https://sellingpointshop.com/api/v1')
                                 : Setting::get('local_api_url', 'http://10.0.2.2:8000/api/v1');
                             return $url;
                         }),

@@ -68,8 +68,8 @@ class CmsController extends Controller
         $activeEnv       = Setting::get('active_environment', 'local');
         $forceProd       = (bool) Setting::get('force_production', false);
         $localUrl        = Setting::get('local_api_url', 'http://10.0.2.2:8000/api/v1');
-        $productionUrl   = Setting::get('production_api_url', 'https://sellingpoint.ng/api/v1');
-        $productionDomain = Setting::get('production_domain', 'https://sellingpoint.ng');
+        $productionUrl   = Setting::get('production_api_url', 'https://sellingpointshop.com/api/v1');
+        $productionDomain = Setting::get('production_domain', 'https://sellingpointshop.com');
 
         $settings['environment'] = [
             'active'           => $activeEnv,

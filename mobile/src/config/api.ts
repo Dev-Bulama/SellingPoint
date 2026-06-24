@@ -23,7 +23,7 @@
 
 // ─── Set your URLs here ───────────────────────────────────────────────────────
 const LOCAL_API_URL      = 'http://10.153.6.102:8000/api/v1';
-const PRODUCTION_API_URL = 'https://sellingpoint.ng/api/v1';
+const PRODUCTION_API_URL = 'https://sellingpointshop.com/api/v1';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const API_BASE_URL: string = __DEV__ ? LOCAL_API_URL : PRODUCTION_API_URL;

@@ -28,8 +28,8 @@ class SettingSeeder extends Seeder
             ['key' => 'force_update_message',    'value' => 'Please update your app to continue shopping.', 'group' => 'app'],
             ['key' => 'active_environment',      'value' => 'local',                             'group' => 'environment'],
             ['key' => 'local_api_url',           'value' => 'http://10.0.2.2:8000/api/v1',       'group' => 'environment'],
-            ['key' => 'production_api_url',      'value' => 'https://sellingpoint.ng/api/v1',    'group' => 'environment'],
-            ['key' => 'production_domain',       'value' => 'https://sellingpoint.ng',           'group' => 'environment'],
+            ['key' => 'production_api_url',      'value' => 'https://sellingpointshop.com/api/v1',    'group' => 'environment'],
+            ['key' => 'production_domain',       'value' => 'https://sellingpointshop.com',           'group' => 'environment'],
             ['key' => 'force_production',        'value' => '0',                                 'group' => 'environment'],
         ];
 
