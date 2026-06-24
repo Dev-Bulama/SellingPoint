@@ -13,7 +13,7 @@ export default function OrderSuccessScreen({ route, navigation }: any) {
   const progressAnim = useRef(new Animated.Value(1)).current;
 
   const resetToHome = () => {
-    navigation.reset({ index: 0, routes: [{ name: 'HomeTab' }] });
+    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   };
 
   useEffect(() => {
@@ -60,12 +60,7 @@ export default function OrderSuccessScreen({ route, navigation }: any) {
 
         <TouchableOpacity
           style={styles.trackBtn}
-          onPress={() => {
-            navigation.reset({
-              index: 1,
-              routes: [{ name: 'HomeTab' }, { name: 'OrderDetail', params: { orderNumber } }],
-            });
-          }}
+          onPress={() => navigation.navigate('OrdersTab')}
         >
           <Text style={styles.trackBtnText}>Track Order</Text>
         </TouchableOpacity>

@@ -385,29 +385,35 @@ export default function SupportScreen({ navigation }: any) {
             allowUniversalAccessFromFileURLs
             injectedJavaScript={`
               (function() {
+                var opened = false;
                 function tryOpen() {
-                  // Try common chat widget open APIs first
+                  if (opened) return;
                   if (window.SkillyChatWidget && window.SkillyChatWidget.open) {
-                    window.SkillyChatWidget.open(); return;
+                    window.SkillyChatWidget.open(); opened = true; return;
                   }
                   if (window.Tawk_API && window.Tawk_API.maximize) {
-                    window.Tawk_API.maximize(); return;
+                    window.Tawk_API.maximize(); opened = true; return;
                   }
                   if (window.$crisp) {
-                    window.$crisp.push(['do', 'chat:open']); return;
+                    window.$crisp.push(['do', 'chat:open']); opened = true; return;
                   }
                   if (window.Intercom) {
-                    window.Intercom('show'); return;
+                    window.Intercom('show'); opened = true; return;
                   }
-                  // Fallback: click the last visible button on the page (the chat bubble)
+                  // Fallback: click the last visible button (the widget bubble)
                   var btns = document.querySelectorAll('button, [role="button"]');
                   for (var i = btns.length - 1; i >= 0; i--) {
                     var r = btns[i].getBoundingClientRect();
-                    if (r.width > 0 && r.height > 0) { btns[i].click(); return; }
+                    if (r.width > 0 && r.height > 0) { btns[i].click(); opened = true; return; }
                   }
                 }
-                // Widget scripts load asynchronously — wait for them
-                setTimeout(tryOpen, 1500);
+                // Retry every 500ms for up to 10 seconds — widget loads asynchronously
+                var attempts = 0;
+                var timer = setInterval(function() {
+                  tryOpen();
+                  attempts++;
+                  if (opened || attempts >= 20) clearInterval(timer);
+                }, 500);
               })();
               true;
             `}
