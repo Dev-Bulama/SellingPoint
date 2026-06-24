@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   FlatList, RefreshControl, Dimensions, Image, ActivityIndicator, Linking,
-  NativeSyntheticEvent, NativeScrollEvent,
+  NativeSyntheticEvent, NativeScrollEvent, AppState,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SIZES } from '../../constants';
 import { productsApi } from '../../api/products';
@@ -411,6 +412,22 @@ export default function HomeScreen({ navigation }: any) {
     fetchCart();
     loadRecentlyViewed();
     fetchUnreadCount();
+  }, []);
+
+  // Refresh badge whenever home screen is focused (e.g. back from Notifications)
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+    }, [])
+  );
+
+  // Poll every 30s while app is in foreground so new notifications appear promptly
+  useEffect(() => {
+    const interval = setInterval(fetchUnreadCount, 30_000);
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') fetchUnreadCount();
+    });
+    return () => { clearInterval(interval); sub.remove(); };
   }, []);
 
   const onRefresh = async () => {
