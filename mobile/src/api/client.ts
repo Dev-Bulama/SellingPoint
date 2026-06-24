@@ -26,6 +26,8 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    // Bypass ngrok browser-warning interstitial during local development
+    'ngrok-skip-browser-warning': 'true',
   },
 });
 
