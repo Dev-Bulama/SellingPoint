@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl, TextInput,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { COLORS, SIZES, ORDER_STATUSES } from '../../constants';
@@ -101,7 +102,12 @@ export default function OrderTrackingScreen({ navigation }: any) {
     }
   }, [page]);
 
-  useEffect(() => { loadOrders(true); }, []);
+  // Reload every time the tab is focused — picks up status changes after payment
+  useFocusEffect(
+    useCallback(() => {
+      loadOrders(true);
+    }, [])
+  );
 
   const onRefresh = () => { setRefreshing(true); loadOrders(true); };
 
@@ -129,7 +135,6 @@ export default function OrderTrackingScreen({ navigation }: any) {
         <TextInput
           style={styles.searchInput}
           placeholder="Search by order number..."
-            placeholderTextColor="#BDBDBD"
           placeholderTextColor={COLORS.placeholder}
           value={searchQuery}
           onChangeText={setSearchQuery}
