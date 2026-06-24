@@ -11,19 +11,20 @@ Route::get('/', function () {
         $appLogo = request()->getSchemeAndHttpHost() . '/storage/' . ltrim($appLogo, '/');
     }
 
-    // Brand color from settings (admin can override), default is the app orange
     $primaryColor = Setting::get('brand_color', '#F97316');
-    // Derive dark/light variants
     $primaryDark  = Setting::get('brand_color_dark', '#EA6C0B');
     $primaryLight = Setting::get('brand_color_light', '#FFF3E8');
 
-    // Live stats pulled from DB
-    $stats = [
-        'products'   => \App\Models\Product::count(),
-        'customers'  => \App\Models\User::whereHas('roles', fn($q) => $q->where('name', 'customer'))->count(),
-        'orders'     => \App\Models\Order::whereIn('status', ['delivered', 'shipped'])->count(),
-        'categories' => \App\Models\Category::count(),
-    ];
+    try {
+        $stats = [
+            'products'   => \App\Models\Product::count(),
+            'customers'  => \App\Models\User::whereHas('roles', fn($q) => $q->where('name', 'customer'))->count(),
+            'orders'     => \App\Models\Order::whereIn('status', ['delivered', 'shipped'])->count(),
+            'categories' => \App\Models\Category::count(),
+        ];
+    } catch (\Throwable $e) {
+        $stats = ['products' => 0, 'customers' => 0, 'orders' => 0, 'categories' => 0];
+    }
 
     return view('landing', [
         'appName'      => $appName,
