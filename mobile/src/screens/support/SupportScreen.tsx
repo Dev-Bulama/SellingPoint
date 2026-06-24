@@ -383,6 +383,34 @@ export default function SupportScreen({ navigation }: any) {
             mixedContentMode="always"
             allowFileAccess
             allowUniversalAccessFromFileURLs
+            injectedJavaScript={`
+              (function() {
+                function tryOpen() {
+                  // Try common chat widget open APIs first
+                  if (window.SkillyChatWidget && window.SkillyChatWidget.open) {
+                    window.SkillyChatWidget.open(); return;
+                  }
+                  if (window.Tawk_API && window.Tawk_API.maximize) {
+                    window.Tawk_API.maximize(); return;
+                  }
+                  if (window.$crisp) {
+                    window.$crisp.push(['do', 'chat:open']); return;
+                  }
+                  if (window.Intercom) {
+                    window.Intercom('show'); return;
+                  }
+                  // Fallback: click the last visible button on the page (the chat bubble)
+                  var btns = document.querySelectorAll('button, [role="button"]');
+                  for (var i = btns.length - 1; i >= 0; i--) {
+                    var r = btns[i].getBoundingClientRect();
+                    if (r.width > 0 && r.height > 0) { btns[i].click(); return; }
+                  }
+                }
+                // Widget scripts load asynchronously — wait for them
+                setTimeout(tryOpen, 1500);
+              })();
+              true;
+            `}
             onShouldStartLoadWithRequest={(req) => {
               if (req.navigationType === 'click' && req.url !== 'about:blank') {
                 Linking.openURL(req.url).catch(() => {});
