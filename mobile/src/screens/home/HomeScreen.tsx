@@ -388,6 +388,7 @@ export default function HomeScreen({ navigation }: any) {
         const popups = r.data.data;
         if (popups.length > 0) {
           setPopupBanner(popups[0]);
+          // Only show popup once per app session
           setPopupVisible(true);
         }
       })
