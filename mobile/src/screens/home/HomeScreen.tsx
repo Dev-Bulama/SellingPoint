@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   FlatList, RefreshControl, Dimensions, Image, ActivityIndicator, Linking,
-  NativeSyntheticEvent, NativeScrollEvent, AppState,
+  NativeSyntheticEvent, NativeScrollEvent, AppState, Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -334,6 +334,8 @@ function getCategoryIcon(name: string): string {
 // ---------------------------------------------------------------------------
 export default function HomeScreen({ navigation }: any) {
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [popupBanner, setPopupBanner] = useState<Banner | null>(null);
+  const [popupVisible, setPopupVisible] = useState(false);
   const [featured, setFeatured] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [flashSales, setFlashSales] = useState<Product[]>([]);
@@ -379,6 +381,17 @@ export default function HomeScreen({ navigation }: any) {
 
     cmsApi.banners('slider')
       .then(r => setBanners(r.data.data))
+      .catch(() => {});
+
+    cmsApi.banners('popup')
+      .then(r => {
+        const popups = r.data.data;
+        if (popups.length > 0) {
+          setPopupBanner(popups[0]);
+          // Only show popup once per app session
+          setPopupVisible(true);
+        }
+      })
       .catch(() => {});
 
     productsApi.categories()
@@ -450,6 +463,38 @@ export default function HomeScreen({ navigation }: any) {
         autoDismissMs={alertProps.autoDismissMs}
         onDismiss={() => setAlertVisible(false)}
       />
+      {/* ── Popup Banner Modal ── */}
+      {popupBanner && (
+        <Modal visible={popupVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setPopupVisible(false)}>
+          <View style={styles.popupOverlay}>
+            <View style={styles.popupCard}>
+              <TouchableOpacity style={styles.popupClose} onPress={() => setPopupVisible(false)} hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}>
+                <IonIcon name="close-circle" size={28} color={COLORS.white} />
+              </TouchableOpacity>
+              {popupBanner.image_url ? (
+                <Image source={{ uri: popupBanner.image_url }} style={styles.popupImage} resizeMode="cover" />
+              ) : (
+                <View style={[styles.popupImage, { backgroundColor: popupBanner.bg_color || COLORS.primary, alignItems: 'center', justifyContent: 'center' }]}>
+                  <Text style={{ color: COLORS.white, fontSize: 18, fontWeight: 'bold', textAlign: 'center', padding: 16 }}>{popupBanner.title}</Text>
+                  {popupBanner.subtitle && <Text style={{ color: COLORS.white, fontSize: 14, textAlign: 'center', padding: 8 }}>{popupBanner.subtitle}</Text>}
+                </View>
+              )}
+              {popupBanner.button_text && (
+                <TouchableOpacity
+                  style={styles.popupBtn}
+                  onPress={() => {
+                    setPopupVisible(false);
+                    if (popupBanner.link) navigation.navigate('ProductList', { title: popupBanner.title || 'Shop Now' });
+                  }}
+                >
+                  <Text style={styles.popupBtnText}>{popupBanner.button_text}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
+      )}
+
       {/* ── Header ── */}
       <View style={styles.header}>
         <View>
@@ -576,6 +621,13 @@ export default function HomeScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+
+  popupOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  popupCard: { width: '100%', borderRadius: 16, overflow: 'hidden', backgroundColor: COLORS.white, elevation: 10 },
+  popupClose: { position: 'absolute', top: 10, right: 10, zIndex: 10 },
+  popupImage: { width: '100%', height: 280 },
+  popupBtn: { backgroundColor: COLORS.primary, paddingVertical: 14, alignItems: 'center' },
+  popupBtnText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

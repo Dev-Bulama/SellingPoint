@@ -25,6 +25,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS so Livewire generates correct POST URLs on Hostinger
+        if (
+            request()->server('HTTPS') === 'on'
+            || request()->server('HTTP_X_FORWARDED_PROTO') === 'https'
+            || str_starts_with(config('app.url', ''), 'https://')
+        ) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         Order::observe(OrderObserver::class);
 
         $this->applyMailConfigFromSettings();
