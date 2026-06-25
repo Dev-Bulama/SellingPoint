@@ -34,7 +34,7 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
     setError('');
     setIsLoading(true);
     try {
-      await authApi.resetPassword(email, otp.trim(), password, passwordConfirmation);
+      await authApi.resetPassword({ email, otp: otp.trim(), password, password_confirmation: passwordConfirmation });
       setSuccess(true);
     } catch (e) {
       setError(getErrorMessage(e));
