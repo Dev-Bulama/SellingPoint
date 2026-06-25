@@ -1,8 +1,10 @@
-# Disable ModSecurity for API routes (Hostinger WAF blocks JSON API requests)
+# Disable ModSecurity WAF (Hostinger blocks JSON POST requests otherwise)
+<IfModule mod_security.c>
+    SecFilterEngine Off
+    SecFilterScanPOST Off
+</IfModule>
 <IfModule mod_security2.c>
-    <If "%{REQUEST_URI} =~ m#^/api/#">
-        SecRuleEngine Off
-    </If>
+    SecRuleEngine Off
 </IfModule>
 
 <IfModule mod_rewrite.c>
