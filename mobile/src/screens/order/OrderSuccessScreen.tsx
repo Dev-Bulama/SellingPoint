@@ -13,7 +13,10 @@ export default function OrderSuccessScreen({ route, navigation }: any) {
   const progressAnim = useRef(new Animated.Value(1)).current;
 
   const resetToHome = () => {
-    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+    // Replace OrderSuccess with Cart in the CartStack (clears it from history)
+    navigation.replace('Cart');
+    // Then switch to HomeTab
+    navigation.getParent()?.navigate('HomeTab');
   };
 
   useEffect(() => {

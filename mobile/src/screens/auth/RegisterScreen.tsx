@@ -52,15 +52,16 @@ export default function RegisterScreen({ navigation }: any) {
 
   const goShopping = () => {
     setShowSuccess(false);
-    navigation.getParent()?.goBack();
+    // Reset root stack to Main (tab navigator), landing on HomeTab
+    navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Main' }] });
   };
 
   const goAccount = () => {
     setShowSuccess(false);
-    navigation.getParent()?.goBack();
-    setTimeout(() => {
-      try { navigation.navigate('AccountTab'); } catch {}
-    }, 400);
+    navigation.getParent()?.reset({
+      index: 0,
+      routes: [{ name: 'Main', state: { routes: [{ name: 'ProfileTab' }], index: 3 } }],
+    });
   };
 
   return (
