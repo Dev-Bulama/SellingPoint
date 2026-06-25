@@ -8,14 +8,13 @@ export function useNetworkStatus() {
   const checkConnection = async () => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
       // Ping the app's own backend — if it's reachable, the app can function
-      const response = await fetch(`${API_BASE_URL}/ping`, {
-        method: 'HEAD',
+      await fetch(`${API_BASE_URL}/ping`, {
+        method: 'GET',
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      // Any HTTP response (even 404) means the server is reachable
       setIsConnected(true);
     } catch {
       setIsConnected(false);
