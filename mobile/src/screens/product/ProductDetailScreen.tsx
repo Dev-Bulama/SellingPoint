@@ -80,6 +80,15 @@ function ReviewCard({ review }: { review: Review }) {
           <Text style={reviewStyles.verified}>Verified Purchase</Text>
         </View>
       )}
+      {review.admin_reply ? (
+        <View style={reviewStyles.adminReply}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <IonIcon name="storefront-outline" size={13} color={COLORS.primary} style={{ marginRight: 4 }} />
+            <Text style={reviewStyles.adminReplyLabel}>Seller Response</Text>
+          </View>
+          <Text style={reviewStyles.adminReplyText}>{review.admin_reply}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -100,6 +109,13 @@ const reviewStyles = StyleSheet.create({
   title: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   body: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
   verified: { fontSize: 11, color: COLORS.success, marginTop: 6, fontWeight: '600' },
+  adminReply: {
+    marginTop: 10, backgroundColor: COLORS.grayLight,
+    borderLeftWidth: 3, borderLeftColor: COLORS.primary,
+    borderRadius: 6, padding: 10,
+  },
+  adminReplyLabel: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
+  adminReplyText: { fontSize: 13, color: COLORS.text, lineHeight: 19 },
 });
 
 // ---------------------------------------------------------------------------

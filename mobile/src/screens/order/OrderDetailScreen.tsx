@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
+import { usePaystack } from 'react-native-paystack-webview';
 import { ordersApi } from '../../api/orders';
+import { paymentsApi } from '../../api/payments';
 import { Order } from '../../types';
 import { COLORS, SIZES, ORDER_STATUSES, PAYMENT_STATUSES } from '../../constants';
 import { formatCurrency, formatDateTime } from '../../utils/currency';
+import { useAuthStore } from '../../store/authStore';
 import AppAlert from '../../components/AppAlert';
 
 const STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
@@ -13,6 +16,10 @@ export default function OrderDetailScreen({ route, navigation }: any) {
   const { orderNumber } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
+  const paystackRefRef = useRef('');
+  const { user } = useAuthStore();
+  const { popup } = usePaystack();
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState<{
     icon: string; iconColor: string; title: string; message: string;
@@ -30,6 +37,32 @@ export default function OrderDetailScreen({ route, navigation }: any) {
   useEffect(() => {
     ordersApi.show(orderNumber).then(res => setOrder(res.data.data)).catch(() => navigation.goBack()).finally(() => setLoading(false));
   }, [orderNumber]);
+
+  const handleCompletePayment = () => {
+    if (!order) return;
+    const reference = `SP_${order.order_number}_${Date.now()}`;
+    paystackRefRef.current = reference;
+    popup.checkout({
+      email: user?.email ?? '',
+      amount: order.total,
+      reference,
+      metadata: { order_number: order.order_number, user_id: user?.id },
+      onSuccess: async () => {
+        setPaying(true);
+        try {
+          await paymentsApi.verify(paystackRefRef.current, order.order_number);
+          setOrder(prev => prev ? { ...prev, payment_status: 'paid' } : prev);
+          showAlert('checkmark-circle', COLORS.success, 'Payment Successful', 'Your payment has been confirmed.');
+        } catch {
+          showAlert('warning-outline', COLORS.danger, 'Verification Error',
+            'Payment received but could not be confirmed automatically. Please contact support with reference: ' + paystackRefRef.current);
+        } finally { setPaying(false); }
+      },
+      onCancel: () => {
+        showAlert('information-circle', COLORS.primary, 'Payment Cancelled', 'You can try again anytime from this page.');
+      },
+    });
+  };
 
   const handleCancel = () => {
     showAlert('close-circle', COLORS.danger, 'Cancel Order', 'Are you sure you want to cancel this order?', [
@@ -154,6 +187,21 @@ export default function OrderDetailScreen({ route, navigation }: any) {
         </View>
       </View>
 
+      {/* Complete Payment */}
+      {order.payment_status === 'unpaid' && order.payment_method === 'paystack' && order.status !== 'cancelled' && (
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.payBtn} onPress={handleCompletePayment} disabled={paying}>
+            {paying
+              ? <ActivityIndicator color={COLORS.white} />
+              : <>
+                  <IonIcon name="card-outline" size={18} color={COLORS.white} style={{ marginRight: 8 }} />
+                  <Text style={styles.payBtnText}>Complete Payment</Text>
+                </>
+            }
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Cancel */}
       {['pending', 'confirmed'].includes(order.status) && (
         <View style={styles.section}>
@@ -203,6 +251,12 @@ const styles = StyleSheet.create({
   itemVariant: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 2 },
   itemQty: { fontSize: 12, color: COLORS.textSecondary },
   itemTotal: { fontSize: 14, fontWeight: 'bold', color: COLORS.text },
+  payBtn: {
+    backgroundColor: COLORS.primary, borderRadius: SIZES.borderRadius,
+    paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    elevation: 2, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3,
+  },
+  payBtnText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
   cancelBtn: { borderWidth: 1.5, borderColor: COLORS.danger, borderRadius: SIZES.borderRadius, paddingVertical: 14, alignItems: 'center' },
   cancelBtnText: { color: COLORS.danger, fontSize: 15, fontWeight: 'bold' },
 });
