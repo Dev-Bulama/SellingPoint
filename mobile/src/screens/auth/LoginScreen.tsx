@@ -7,36 +7,47 @@ import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS, SIZES } from '../../constants';
 import { getErrorMessage } from '../../utils/currency';
+import AppAlert from '../../components/AppAlert';
 
 export default function LoginScreen({ navigation }: any) {
   const { login, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   const handleLogin = async () => {
-    if (!email || !password) { setError('Please fill in all fields'); return; }
-    setError('');
+    if (!email || !password) {
+      setAlertMessage('Please fill in all fields');
+      setAlertVisible(true);
+      return;
+    }
     try {
       await login(email.trim().toLowerCase(), password);
-      // Dismiss the Auth modal — Main navigator re-renders with auth tabs unlocked
       navigation.getParent()?.goBack();
     } catch (e) {
-      setError(getErrorMessage(e));
+      setAlertMessage(getErrorMessage(e));
+      setAlertVisible(true);
     }
   };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <AppAlert
+        visible={alertVisible}
+        icon="close-circle"
+        iconColor={COLORS.danger}
+        title="Sign In Failed"
+        message={alertMessage}
+        onDismiss={() => setAlertVisible(false)}
+      />
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={styles.logoCircle}><Text style={styles.logoText}>SP</Text></View>
           <Text style={styles.title}>Welcome Back!</Text>
           <Text style={styles.subtitle}>Sign in to continue shopping</Text>
         </View>
-
-        {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
@@ -100,8 +111,6 @@ const styles = StyleSheet.create({
   logoText: { fontSize: 24, fontWeight: 'bold', color: COLORS.white },
   title: { fontSize: 26, fontWeight: 'bold', color: COLORS.text },
   subtitle: { fontSize: 14, color: COLORS.textSecondary, marginTop: 4 },
-  errorBox: { backgroundColor: '#FEE', borderRadius: 8, padding: 12, marginBottom: 16 },
-  errorText: { color: COLORS.danger, fontSize: 14 },
   form: {},
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 6 },

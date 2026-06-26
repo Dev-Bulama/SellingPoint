@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.borderRadiusSm,
     padding: 14, fontSize: 15, backgroundColor: COLORS.grayLight, marginBottom: 20,
+    color: COLORS.text,
   },
   button: {
     backgroundColor: COLORS.primary, borderRadius: SIZES.borderRadius,
