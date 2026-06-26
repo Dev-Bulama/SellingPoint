@@ -24,7 +24,7 @@ export default function AppNavigator({ appName, appLogo }: { appName?: string; a
   const [isLoading, setIsLoading] = useState(true);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(true);
   const [forceUpdate, setForceUpdate] = useState<{ required: boolean; minVersion: string } | null>(null);
-  const { isConnected, retry } = useNetworkStatus();
+  const { isConnected, isSlow, retry } = useNetworkStatus();
   const navRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useEffect(() => {
@@ -89,6 +89,11 @@ export default function AppNavigator({ appName, appLogo }: { appName?: string; a
       {!isConnected && (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <NoInternetScreen onRetry={retry} />
+        </View>
+      )}
+      {isConnected && isSlow && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <NoInternetScreen onRetry={retry} isSlow />
         </View>
       )}
     </View>

@@ -347,7 +347,7 @@ export default function HomeScreen({ navigation }: any) {
   const { user } = useAuthStore();
   const { unreadCount, fetchUnreadCount } = useNotificationStore();
   const [alertVisible, setAlertVisible] = useState(false);
-  const [alertProps, setAlertProps] = useState({ icon: '', iconColor: '', title: '', message: '', autoDismissMs: undefined as number | undefined });
+  const [alertProps, setAlertProps] = useState<{ icon: string; iconColor: string; title: string; message: string; autoDismissMs?: number; buttons?: { text: string; style?: 'primary' | 'outline'; onPress?: () => void }[] }>({ icon: '', iconColor: '', title: '', message: '' });
 
   const allProductsRef = useRef<Product[]>([]);
   useEffect(() => {
@@ -355,16 +355,30 @@ export default function HomeScreen({ navigation }: any) {
   }, [flashSales, newArrivals, recentlyViewed]);
 
   const handleAddToCart = useCallback(async (productId: number) => {
+    if (!user) {
+      setAlertProps({
+        icon: 'lock-closed-outline', iconColor: COLORS.primary,
+        title: 'Login Required',
+        message: 'You need to be logged in to add items to your cart.',
+        autoDismissMs: undefined,
+        buttons: [
+          { text: 'Login', style: 'primary', onPress: () => { setAlertVisible(false); navigation.getParent()?.getParent()?.navigate('Auth'); } },
+          { text: 'Register', style: 'outline', onPress: () => { setAlertVisible(false); navigation.getParent()?.getParent()?.navigate('Auth', { screen: 'Register' }); } },
+        ],
+      });
+      setAlertVisible(true);
+      return;
+    }
     const product = allProductsRef.current.find(p => p.id === productId);
-    setAlertProps({ icon: 'checkmark-circle', iconColor: COLORS.success, title: 'Added to Cart', message: `${product?.name ?? 'Item'} added successfully!`, autoDismissMs: 2500 });
-    setAlertVisible(true);
     try {
       await addItem(productId, 1);
+      setAlertProps({ icon: 'checkmark-circle', iconColor: COLORS.success, title: 'Added to Cart', message: `${product?.name ?? 'Item'} added successfully!`, autoDismissMs: 2500, buttons: undefined });
+      setAlertVisible(true);
     } catch {
-      setAlertProps({ icon: 'close-circle', iconColor: COLORS.danger, title: 'Error', message: 'Could not add to cart.', autoDismissMs: undefined });
+      setAlertProps({ icon: 'close-circle', iconColor: COLORS.danger, title: 'Error', message: 'Could not add to cart. Please try again.', autoDismissMs: undefined, buttons: undefined });
       setAlertVisible(true);
     }
-  }, [addItem]);
+  }, [addItem, user, navigation]);
 
   const firstName = user?.name?.trim().split(' ')[0] ?? '';
 
@@ -461,6 +475,7 @@ export default function HomeScreen({ navigation }: any) {
         title={alertProps.title}
         message={alertProps.message}
         autoDismissMs={alertProps.autoDismissMs}
+        buttons={alertProps.buttons}
         onDismiss={() => setAlertVisible(false)}
       />
       {/* ── Popup Banner Modal ── */}
