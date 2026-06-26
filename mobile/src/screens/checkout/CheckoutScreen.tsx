@@ -145,8 +145,8 @@ export default function CheckoutScreen({ navigation }: any) {
             showAlert('information-circle', COLORS.primary, 'Payment Cancelled',
               'Your order was placed but payment was not completed. You can complete payment from your Orders page.',
               [
-                { text: 'View My Orders', onPress: () => navigation.replace('OrderSuccess', { orderNumber: pendingOrderRef.current }), style: 'primary' },
-                { text: 'Dismiss' },
+                { text: 'View My Orders', onPress: () => { setAlertVisible(false); navigation.replace('OrderSuccess', { orderNumber: pendingOrderRef.current }); }, style: 'primary' },
+                { text: 'Dismiss', onPress: () => setAlertVisible(false) },
               ]);
           },
         });
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   addrName: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
   addrText: { fontSize: 13, color: COLORS.textSecondary },
   paymentCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, borderRadius: SIZES.borderRadius, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: COLORS.border },
-  paymentLabel: { fontSize: 14, color: COLORS.text, fontWeight: '500' },
+  paymentLabel: { fontSize: 14, color: COLORS.text, fontWeight: '500', flex: 1, flexWrap: 'wrap' },
   couponRow: { flexDirection: 'row', gap: 10 },
   couponInput: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.borderRadiusSm, padding: 12, fontSize: 14, backgroundColor: COLORS.white },
   applyBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 20, borderRadius: SIZES.borderRadiusSm, alignItems: 'center', justifyContent: 'center' },
