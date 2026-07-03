@@ -20,17 +20,12 @@ async function getToken(): Promise<string | null> {
   return cachedToken;
 }
 
-// This key must match APP_API_KEY in the server's .env
-// It's a lightweight app-identity check — not a secret (it's in the APK)
-export const APP_API_KEY = 'sp_mobile_2024_xK9mP3qR';
-
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    'X-Api-Key': APP_API_KEY,
     // Bypass ngrok browser-warning interstitial during local development
     'ngrok-skip-browser-warning': 'true',
   },
