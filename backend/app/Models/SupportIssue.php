@@ -13,6 +13,7 @@ class SupportIssue extends Model
         'description',
         'order_number',
         'status',
+        'admin_reply',
     ];
 
     public function user(): BelongsTo

@@ -6,8 +6,10 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Models\Order;
+use App\Models\Review;
 use App\Models\Setting;
 use App\Observers\OrderObserver;
+use App\Observers\ReviewObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Order::observe(OrderObserver::class);
+        Review::observe(ReviewObserver::class);
 
         $this->applyMailConfigFromSettings();
 

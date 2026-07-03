@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image, TextInput, ActivityIndicator } from 'react-native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
+import { authApi } from '../../api/auth';
 import { COLORS, SIZES } from '../../constants';
 
 const MenuItem = ({ iconName, label, onPress, color = COLORS.text, badge }: any) => (
@@ -19,8 +20,27 @@ const MenuItem = ({ iconName, label, onPress, color = COLORS.text, badge }: any)
 export default function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuthStore();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const initials = user?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) ?? 'U';
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) { setDeleteError('Please enter your password'); return; }
+    setDeletingAccount(true);
+    setDeleteError('');
+    try {
+      await authApi.deleteAccount(deletePassword);
+      setShowDeleteModal(false);
+      logout();
+    } catch (e: any) {
+      setDeleteError(e?.response?.data?.message ?? 'Failed to delete account');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -73,11 +93,49 @@ export default function ProfileScreen({ navigation }: any) {
       <View style={styles.section}>
         <View style={styles.menuGroup}>
           <MenuItem iconName="log-out-outline" label="Logout" onPress={() => setShowLogoutModal(true)} color={COLORS.danger} />
+          <MenuItem iconName="trash-outline" label="Delete Account" onPress={() => { setDeletePassword(''); setDeleteError(''); setShowDeleteModal(true); }} color={COLORS.danger} />
         </View>
       </View>
 
       <Text style={styles.version}>Sellingpoint v1.0.0</Text>
       <View style={{ height: 32 }} />
+
+      {/* Delete Account Modal */}
+      <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={[styles.modalIconWrap, { backgroundColor: COLORS.danger + '15' }]}>
+              <IonIcon name="trash-outline" size={32} color={COLORS.danger} />
+            </View>
+            <Text style={styles.modalTitle}>Delete Account</Text>
+            <Text style={styles.modalMessage}>
+              This is permanent. All your data will be deleted and this action cannot be undone. Please enter your password to confirm.
+            </Text>
+            <TextInput
+              style={styles.deleteInput}
+              placeholder="Enter your password"
+              placeholderTextColor={COLORS.placeholder}
+              secureTextEntry
+              value={deletePassword}
+              onChangeText={setDeletePassword}
+            />
+            {deleteError ? <Text style={styles.deleteError}>{deleteError}</Text> : null}
+            <TouchableOpacity
+              style={[styles.modalLogoutBtn, { backgroundColor: COLORS.danger }]}
+              onPress={handleDeleteAccount}
+              disabled={deletingAccount}
+            >
+              {deletingAccount
+                ? <ActivityIndicator color={COLORS.white} />
+                : <Text style={styles.modalLogoutText}>Yes, Delete My Account</Text>
+              }
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowDeleteModal(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Logout Modal */}
       <Modal visible={showLogoutModal} transparent animationType="fade" onRequestClose={() => setShowLogoutModal(false)}>
@@ -148,4 +206,9 @@ const styles = StyleSheet.create({
   modalLogoutText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
   modalCancelBtn: { borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.borderRadius, paddingVertical: 13, width: '100%', alignItems: 'center' },
   modalCancelText: { color: COLORS.text, fontSize: 15 },
+  deleteInput: {
+    width: '100%', borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.borderRadiusSm,
+    padding: 13, fontSize: 15, color: COLORS.text, backgroundColor: COLORS.grayLight, marginBottom: 8,
+  },
+  deleteError: { color: COLORS.danger, fontSize: 13, marginBottom: 12, alignSelf: 'flex-start' },
 });

@@ -22,4 +22,7 @@ export const authApi = {
 
   resetPassword: (data: { email: string; otp: string; password: string; password_confirmation: string }) =>
     apiClient.post('/auth/reset-password', data),
+
+  deleteAccount: (password: string) =>
+    apiClient.delete('/auth/account', { data: { password } }),
 };

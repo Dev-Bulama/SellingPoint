@@ -153,4 +153,31 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Password reset successful']);
     }
+
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $request->validate([
+            'password' => 'required',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Incorrect password'], 422);
+        }
+
+        // Revoke all tokens
+        $user->tokens()->delete();
+
+        // Anonymise personal data and soft-delete (keeps order history intact)
+        $user->update([
+            'name'   => 'Deleted User',
+            'email'  => 'deleted_' . $user->id . '@deleted.invalid',
+            'phone'  => null,
+            'avatar' => null,
+        ]);
+        $user->delete();
+
+        return response()->json(['message' => 'Account deleted successfully']);
+    }
 }
