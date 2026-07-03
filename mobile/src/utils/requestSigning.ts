@@ -38,20 +38,14 @@ function sha256(bytes: number[]): number[] {
   const msg = [...bytes, 0x80];
   while ((msg.length % 64) !== 56) msg.push(0);
   const bitLen = bytes.length * 8;
-  msg.push(0,0,0,0,
-    (bitLen / 0x100000000) & 0xff,
-    (bitLen / 0x1000000) & 0xff,
-    (bitLen / 0x10000) & 0xff,
-    (bitLen / 0x100) & 0xff,
-    bitLen & 0xff,  // simplified: assume length fits in 32 bits
-    0, 0, 0,
+  // Append 8-byte big-endian bit length (high 32 bits always 0 for our inputs)
+  msg.push(
+    0, 0, 0, 0,
+    (bitLen >>> 24) & 0xff,
+    (bitLen >>> 16) & 0xff,
+    (bitLen >>> 8) & 0xff,
+    bitLen & 0xff,
   );
-  // Fix the length encoding properly
-  msg[msg.length - 5] = (bitLen >>> 24) & 0xff;
-  msg[msg.length - 4] = (bitLen >>> 16) & 0xff;
-  msg[msg.length - 3] = (bitLen >>> 8) & 0xff;
-  msg[msg.length - 2] = bitLen & 0xff;
-  msg[msg.length - 1] = 0;
 
   let h0=0x6a09e667,h1=0xbb67ae85,h2=0x3c6ef372,h3=0xa54ff53a;
   let h4=0x510e527f,h5=0x9b05688c,h6=0x1f83d9ab,h7=0x5be0cd19;
