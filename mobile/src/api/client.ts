@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config/api';
+import { signRequest } from '../utils/requestSigning';
 
 // In-memory token cache — avoids AsyncStorage lookup on every request
 let cachedToken: string | null | undefined = undefined;
@@ -20,17 +21,12 @@ async function getToken(): Promise<string | null> {
   return cachedToken;
 }
 
-// This key must match APP_API_KEY in the server's .env
-// It's a lightweight app-identity check — not a secret (it's in the APK)
-export const APP_API_KEY = 'sp_mobile_2024_xK9mP3qR';
-
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    'X-Api-Key': APP_API_KEY,
     // Bypass ngrok browser-warning interstitial during local development
     'ngrok-skip-browser-warning': 'true',
   },
@@ -46,10 +42,25 @@ export function setBaseUrl(url: string) {
 
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Auth token
     const token = await getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // HMAC request signature — skip ping (no signing required)
+    const path = config.url ?? '';
+    if (!path.includes('/ping')) {
+      const method = config.method ?? 'get';
+      // Resolve full path relative to baseURL for signing
+      const base = (config.baseURL ?? apiClient.defaults.baseURL ?? '').replace(/\/$/, '');
+      const fullPath = base + (path.startsWith('/') ? path : '/' + path);
+      // Extract just the path portion (strip domain)
+      const urlPath = fullPath.replace(/^https?:\/\/[^/]+/, '');
+      const { _t, _s } = await signRequest(method, urlPath);
+      config.params = { ...(config.params ?? {}), _t, _s };
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
