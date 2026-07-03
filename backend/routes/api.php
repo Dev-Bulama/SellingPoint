@@ -15,12 +15,9 @@ use Illuminate\Support\Facades\Route;
 
 // ─── Public Routes ───────────────────────────────────────────────────────────
 
-// Ping is exempt from API key so the app can check connectivity before auth
-Route::match(['get', 'head'], 'v1/ping', fn() => response()->json(['ok' => true]));
+Route::prefix('v1')->group(function () {
 
-Route::prefix('v1')->middleware('api.key')->group(function () {
-
-    // Connectivity check — no auth required (also registered above without key check)
+    // Connectivity check — no auth required
     Route::match(['get', 'head'], 'ping', fn() => response()->json(['ok' => true]));
 
     // Auth (rate-limited)
