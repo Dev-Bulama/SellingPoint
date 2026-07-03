@@ -41,10 +41,17 @@ class AppServiceProvider extends ServiceProvider
 
         $this->applyMailConfigFromSettings();
 
+        // Authenticated routes — generous limit per user
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Public browse routes — per IP
+        RateLimiter::for('public-api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
+        });
+
+        // Auth endpoints — strict to slow brute-force
         RateLimiter::for('auth', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
         });

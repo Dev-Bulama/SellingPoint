@@ -21,7 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
         $middleware->alias([
-            'api.key' => \App\Http\Middleware\VerifyApiKey::class,
+            'api.key'  => \App\Http\Middleware\VerifyApiKey::class,
+            'api.sign' => \App\Http\Middleware\VerifyRequestSignature::class,
         ]);
         $middleware->throttleApi();
     })
