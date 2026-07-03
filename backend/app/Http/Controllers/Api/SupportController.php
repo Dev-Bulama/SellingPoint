@@ -35,7 +35,7 @@ class SupportController extends Controller
     {
         $issues = SupportIssue::where('user_id', $request->user()->id)
             ->latest()
-            ->get();
+            ->get(['id', 'issue_type', 'description', 'order_number', 'status', 'admin_reply', 'created_at']);
 
         return response()->json(['data' => $issues]);
     }

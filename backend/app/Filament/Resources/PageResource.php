@@ -16,9 +16,18 @@ class PageResource extends Resource {
 
     public static function form(Form $form): Form {
         return $form->schema([
-            Forms\Components\TextInput::make('title')->required()->live(onBlur: true)
-                ->afterStateUpdated(fn($state, $set) => $set('slug', Str::slug($state))),
-            Forms\Components\TextInput::make('slug')->required()->unique(ignoreRecord: true),
+            Forms\Components\TextInput::make('title')->required()
+                ->live(onBlur: true)
+                ->afterStateUpdated(function ($state, $set, $context) {
+                    // Only auto-generate slug on create, never on edit
+                    if ($context === 'create') {
+                        $set('slug', Str::slug($state));
+                    }
+                }),
+            Forms\Components\TextInput::make('slug')
+                ->required()
+                ->unique(ignoreRecord: true)
+                ->helperText('Do not change the slug — it must match what the app expects (e.g. terms-and-conditions)'),
             Forms\Components\RichEditor::make('content')->required()->columnSpanFull(),
             Forms\Components\Toggle::make('is_active')->default(true),
         ])->columns(2);

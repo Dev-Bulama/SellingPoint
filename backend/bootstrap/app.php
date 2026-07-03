@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(append: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
+        $middleware->alias([
+            'api.key' => \App\Http\Middleware\VerifyApiKey::class,
+        ]);
         $middleware->throttleApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {

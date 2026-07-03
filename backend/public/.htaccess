@@ -1,10 +1,18 @@
-# Disable ModSecurity WAF (Hostinger blocks JSON POST requests otherwise)
+# Disable WAF — required on Hostinger (ModSecurity + LiteSpeed LSAPI)
 <IfModule mod_security.c>
     SecFilterEngine Off
     SecFilterScanPOST Off
 </IfModule>
 <IfModule mod_security2.c>
     SecRuleEngine Off
+    SecRequestBodyAccess Off
+    SecResponseBodyAccess Off
+    SecAuditEngine Off
+</IfModule>
+# LiteSpeed Web Server WAF (separate from mod_security on Hostinger)
+<IfModule LiteSpeed>
+    SecRuleEngine Off
+    RewriteRule .* - [E=noabort:1]
 </IfModule>
 
 <IfModule mod_rewrite.c>
