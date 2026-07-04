@@ -139,6 +139,7 @@ class ProductController extends Controller
     public function recentlyViewed(Request $request): JsonResponse
     {
         $items = RecentlyViewed::where('user_id', $request->user()->id)
+            ->whereHas('product')
             ->with(['product.images'])
             ->orderByDesc('viewed_at')
             ->limit(20)->get();
