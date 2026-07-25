@@ -20,6 +20,8 @@ import AppAlert from '../../components/AppAlert';
 const { width } = Dimensions.get('window');
 const BANNER_WIDTH = width;
 const RECENTLY_VIEWED_KEY = 'recently_viewed';
+const HOME_CACHE_KEY = 'home_cache_v1';
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const SLIDE_INTERVAL = 3500;
 
 // ---------------------------------------------------------------------------
@@ -66,7 +68,7 @@ const timerStyles = StyleSheet.create({
     backgroundColor: COLORS.accent, borderRadius: 4,
     paddingHorizontal: 6, paddingVertical: 3, marginHorizontal: 1,
   },
-  digit: { color: COLORS.white, fontSize: 13, fontWeight: 'bold', fontVariant: ['tabular-nums'] },
+  digit: { color: COLORS.white, fontSize: 13, fontWeight: 'bold' },
   colon: { color: COLORS.accent, fontWeight: 'bold', fontSize: 14, marginHorizontal: 1 },
 });
 
@@ -268,8 +270,8 @@ function ProductCard({
         </View>
         <View style={styles.ratingRow}>
           <IonIcon name="star" size={11} color="#F5A623" />
-          <Text style={styles.ratingText}>{product.average_rating.toFixed(1)}</Text>
-          <Text style={styles.soldText}> · {product.sold_count} sold</Text>
+          <Text style={styles.ratingText}>{(Number(product.average_rating) || 0).toFixed(1)}</Text>
+          <Text style={styles.soldText}> · {product.sold_count ?? 0} sold</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -389,53 +391,82 @@ export default function HomeScreen({ navigation }: any) {
     } catch {}
   }, []);
 
-  const loadData = useCallback(async () => {
-    // Fire all requests in parallel; update state as each resolves so content appears progressively
-    const safe = (p: Promise<any>, fallback: any) => p.catch(() => fallback);
+  // Apply a cached snapshot immediately so the screen is never blank
+  const applyCache = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem(HOME_CACHE_KEY);
+      if (!raw) return;
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL_MS * 3) return; // discard if very stale (30 min)
+      if (Array.isArray(data.banners) && data.banners.length) setBanners(data.banners);
+      if (Array.isArray(data.categories) && data.categories.length) setCategories(data.categories);
+      if (Array.isArray(data.featured) && data.featured.length) setFeatured(data.featured);
+      if (Array.isArray(data.flashSales) && data.flashSales.length) setFlashSales(data.flashSales);
+      if (Array.isArray(data.newArrivals) && data.newArrivals.length) setNewArrivals(data.newArrivals);
+      if (data.flashSaleEnd) setFlashSaleEnd(new Date(data.flashSaleEnd));
+    } catch {}
+  }, []);
 
-    cmsApi.banners('slider')
-      .then(r => setBanners(r.data.data))
-      .catch(() => {});
+  const loadData = useCallback(async (fromRefresh = false) => {
+    // Popup only once per session, not on pull-to-refresh
+    let popupShown = fromRefresh;
 
-    cmsApi.banners('popup')
-      .then(r => {
-        const popups = r.data.data;
-        if (popups.length > 0) {
-          setPopupBanner(popups[0]);
-          // Only show popup once per app session
-          setPopupVisible(true);
-        }
-      })
-      .catch(() => {});
+    const bannersP = cmsApi.banners('slider')
+      .then(r => { const d = r.data.data; setBanners(d); return d; })
+      .catch(() => null);
 
-    productsApi.categories()
-      .then(r => setCategories(r.data.data))
-      .catch(() => {});
+    if (!popupShown) {
+      cmsApi.banners('popup')
+        .then(r => {
+          const popups = r.data.data;
+          if (popups.length > 0) { setPopupBanner(popups[0]); setPopupVisible(true); }
+        })
+        .catch(() => {});
+    }
 
-    productsApi.featured()
-      .then(r => setFeatured(r.data.data))
-      .catch(() => {});
+    const categoriesP = productsApi.categories()
+      .then(r => { const d = r.data.data; setCategories(d); return d; })
+      .catch(() => null);
 
-    productsApi.flashSales()
-      .then(r => setFlashSales(r.data.data))
-      .catch(() => {});
+    const featuredP = productsApi.featured()
+      .then(r => { const d = r.data.data; setFeatured(d); return d; })
+      .catch(() => null);
 
-    productsApi.newArrivals()
-      .then(r => setNewArrivals(r.data.data))
-      .catch(() => {});
+    const flashSalesP = productsApi.flashSales()
+      .then(r => { const d = r.data.data; setFlashSales(d); return d; })
+      .catch(() => null);
 
-    cmsApi.flashSales()
+    const newArrivalsP = productsApi.newArrivals()
+      .then(r => { const d = r.data.data; setNewArrivals(d); return d; })
+      .catch(() => null);
+
+    const flashSaleEndP = cmsApi.flashSales()
       .then(r => {
         const list = r.data.data;
         if (Array.isArray(list) && list.length > 0 && list[0].ends_at) {
-          setFlashSaleEnd(new Date(list[0].ends_at));
+          const d = new Date(list[0].ends_at);
+          setFlashSaleEnd(d);
+          return d.toISOString();
         }
+        return null;
       })
-      .catch(() => {});
+      .catch(() => null);
+
+    // Persist fresh data to cache once all settle
+    Promise.all([bannersP, categoriesP, featuredP, flashSalesP, newArrivalsP, flashSaleEndP])
+      .then(([banners, categories, featured, flashSales, newArrivals, flashSaleEnd]) => {
+        if (!banners && !categories && !featured) return; // all failed, keep old cache
+        const payload = {
+          ts: Date.now(),
+          data: { banners, categories, featured, flashSales, newArrivals, flashSaleEnd },
+        };
+        AsyncStorage.setItem(HOME_CACHE_KEY, JSON.stringify(payload)).catch(() => {});
+      });
   }, []);
 
   useEffect(() => {
-    loadData();
+    applyCache();          // show cached content instantly
+    loadData(false);       // fetch fresh in background
     fetchCart();
     loadRecentlyViewed();
     fetchUnreadCount();
@@ -459,7 +490,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadData(), loadRecentlyViewed()]);
+    await Promise.all([loadData(true), loadRecentlyViewed()]);
     setRefreshing(false);
   };
 

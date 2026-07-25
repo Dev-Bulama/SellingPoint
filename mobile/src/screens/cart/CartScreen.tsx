@@ -10,6 +10,7 @@ import { useCartStore } from '../../store/cartStore';
 import { CartItem } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import AppAlert from '../../components/AppAlert';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 const { width } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 80;
@@ -31,6 +32,14 @@ function CartItemRow({
   const translateX = useRef(new Animated.Value(0)).current;
   const [swiped, setSwiped] = useState(false);
 
+  // Guard: product may be null if it was deleted after being added to cart
+  const product = item?.product;
+  const productName = product?.name ?? 'Unavailable product';
+  const thumbnailUrl = product?.thumbnail_url ?? null;
+  const price = Number(item?.price) || 0;
+  const subtotal = Number(item?.subtotal) || 0;
+  const quantity = Number(item?.quantity) || 1;
+
   const handleLongPress = () => {
     if (swiped) {
       Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
@@ -42,7 +51,7 @@ function CartItemRow({
   };
 
   const triggerRemove = () => {
-    onConfirmRemove(item.id, item.product.name, () => {
+    onConfirmRemove(item.id, productName, () => {
       Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
       setSwiped(false);
     });
@@ -63,9 +72,9 @@ function CartItemRow({
         <Pressable onLongPress={handleLongPress} style={styles.cartItemInner}>
           {/* Product image */}
           <View style={styles.itemImage}>
-            {item.product.thumbnail_url ? (
+            {thumbnailUrl ? (
               <Image
-                source={{ uri: item.product.thumbnail_url }}
+                source={{ uri: thumbnailUrl }}
                 style={styles.itemImageImg}
                 resizeMode="cover"
               />
@@ -75,38 +84,43 @@ function CartItemRow({
           </View>
 
           <View style={styles.itemDetails}>
-            <Text style={styles.itemName} numberOfLines={2}>{item.product.name}</Text>
+            <Text style={styles.itemName} numberOfLines={2}>{productName}</Text>
+            {!product && (
+              <Text style={[styles.variantText, { color: COLORS.danger }]}>
+                This product is no longer available
+              </Text>
+            )}
             {item.variant && (
               <Text style={styles.variantText}>{item.variant.name}: {item.variant.value}</Text>
             )}
-            <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
+            <Text style={styles.itemPrice}>{formatCurrency(price)}</Text>
 
             {/* Premium quantity stepper */}
             <View style={styles.qtyRow}>
               <TouchableOpacity
-                style={[styles.qtyCircleBtn, item.quantity === 1 && styles.qtyCircleBtnDanger]}
+                style={[styles.qtyCircleBtn, quantity === 1 && styles.qtyCircleBtnDanger]}
                 onPress={() =>
-                  item.quantity > 1
-                    ? onUpdateQty(item.id, item.quantity - 1)
+                  quantity > 1
+                    ? onUpdateQty(item.id, quantity - 1)
                     : triggerRemove()
                 }
               >
-                {item.quantity === 1
+                {quantity === 1
                   ? <IonIcon name="close" size={16} color={COLORS.danger} />
                   : <IonIcon name="remove" size={16} color={COLORS.text} />
                 }
               </TouchableOpacity>
 
-              <Text style={styles.qtyValue}>{item.quantity}</Text>
+              <Text style={styles.qtyValue}>{quantity}</Text>
 
               <TouchableOpacity
                 style={styles.qtyCircleBtn}
-                onPress={() => onUpdateQty(item.id, item.quantity + 1)}
+                onPress={() => onUpdateQty(item.id, quantity + 1)}
               >
                 <IonIcon name="add" size={16} color={COLORS.text} />
               </TouchableOpacity>
 
-              <Text style={styles.subtotal}>{formatCurrency(item.subtotal)}</Text>
+              <Text style={styles.subtotal}>{formatCurrency(subtotal)}</Text>
             </View>
           </View>
         </Pressable>
@@ -146,7 +160,7 @@ function EmptyCart({ onShopNow }: { onShopNow: () => void }) {
 // ---------------------------------------------------------------------------
 // CartScreen
 // ---------------------------------------------------------------------------
-export default function CartScreen({ navigation }: any) {
+function CartScreenInner({ navigation }: any) {
   const { cart, isLoading, fetchCart, updateItem, removeItem, clearCart } = useCartStore();
 
   const [alertVisible, setAlertVisible] = useState(false);
@@ -187,7 +201,10 @@ export default function CartScreen({ navigation }: any) {
     );
   }
 
-  const isEmpty = !cart || cart.items.length === 0;
+  const safeItems = Array.isArray(cart?.items) ? cart!.items : [];
+  const isEmpty = safeItems.length === 0;
+  const cartTotal = Number(cart?.total) || 0;
+  const cartItemsCount = cart?.items_count ?? safeItems.length;
 
   return (
     <View style={styles.container}>
@@ -216,8 +233,8 @@ export default function CartScreen({ navigation }: any) {
       ) : (
         <>
           <FlatList
-            data={cart.items}
-            keyExtractor={(item) => String(item.id)}
+            data={safeItems}
+            keyExtractor={(item, index) => item?.id != null ? String(item.id) : `idx-${index}`}
             renderItem={({ item }) => (
               <CartItemRow
                 item={item}
@@ -228,6 +245,9 @@ export default function CartScreen({ navigation }: any) {
             )}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={6}
+            maxToRenderPerBatch={8}
+            windowSize={5}
             ListFooterComponent={
               <Text style={styles.swipeHint}>Long-press an item to reveal delete</Text>
             }
@@ -237,8 +257,8 @@ export default function CartScreen({ navigation }: any) {
           <View style={styles.footer}>
             <View style={styles.summaryCard}>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Items ({cart.items_count})</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(cart.total)}</Text>
+                <Text style={styles.summaryLabel}>Items ({cartItemsCount})</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(cartTotal)}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Delivery</Text>
@@ -246,7 +266,7 @@ export default function CartScreen({ navigation }: any) {
               </View>
               <View style={[styles.summaryRow, styles.totalRow]}>
                 <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalAmount}>{formatCurrency(cart.total)}</Text>
+                <Text style={styles.totalAmount}>{formatCurrency(cartTotal)}</Text>
               </View>
             </View>
 
@@ -256,13 +276,21 @@ export default function CartScreen({ navigation }: any) {
               activeOpacity={0.88}
             >
               <Text style={styles.checkoutBtnText}>
-                Proceed to Checkout · {formatCurrency(cart.total)}
+                Proceed to Checkout · {formatCurrency(cartTotal)}
               </Text>
             </TouchableOpacity>
           </View>
         </>
       )}
     </View>
+  );
+}
+
+export default function CartScreen(props: any) {
+  return (
+    <ErrorBoundary fallbackTitle="Cart Error" onReset={() => {}}>
+      <CartScreenInner {...props} />
+    </ErrorBoundary>
   );
 }
 
