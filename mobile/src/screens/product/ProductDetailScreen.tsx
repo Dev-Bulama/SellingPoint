@@ -387,9 +387,9 @@ export default function ProductDetailScreen({ route, navigation }: any) {
           {/* Rating */}
           <View style={styles.ratingRow}>
             <StarRow rating={product.average_rating} />
-            <Text style={styles.ratingValue}> {product.average_rating.toFixed(1)}</Text>
+            <Text style={styles.ratingValue}> {(Number(product.average_rating) || 0).toFixed(1)}</Text>
             <Text style={styles.reviewCount}> ({product.review_count} reviews)</Text>
-            <Text style={styles.soldCount}> · {product.sold_count} sold</Text>
+            <Text style={styles.soldCount}> · {(product.sold_count ?? 0)} sold</Text>
           </View>
 
           {/* Price */}
@@ -502,7 +502,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 Reviews ({product.review_count})
               </Text>
               <View style={styles.avgRatingBox}>
-                <Text style={styles.avgRatingNum}>{product.average_rating.toFixed(1)}</Text>
+                <Text style={styles.avgRatingNum}>{(Number(product.average_rating) || 0).toFixed(1)}</Text>
                 <StarRow rating={product.average_rating} size={13} />
               </View>
             </View>

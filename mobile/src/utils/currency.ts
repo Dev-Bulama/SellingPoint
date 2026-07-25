@@ -1,18 +1,45 @@
-export const formatCurrency = (amount: number, symbol = '₦'): string => {
-  return `${symbol}${amount.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+// Safe number formatter — avoids toLocaleString locale args which crash on
+// older Hermes/Android (Infinix XOS, Android 8-9, missing ICU data).
+function commaify(n: number): string {
+  const s = Math.round(Math.abs(n)).toString();
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 === 0) out += ',';
+    out += s[i];
+  }
+  return out;
+}
+
+export const formatCurrency = (amount: number | null | undefined, symbol = '₦'): string => {
+  const n = Number(amount);
+  if (!isFinite(n)) return `${symbol}0`;
+  return `${symbol}${commaify(n)}`;
 };
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-NG', {
-    year: 'numeric', month: 'short', day: 'numeric',
-  });
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  } catch {
+    return dateString;
+  }
 };
 
 export const formatDateTime = (dateString: string): string => {
-  return new Date(dateString).toLocaleString('en-NG', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    const h = d.getHours(), m = d.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hh = h % 12 || 12;
+    const mm = String(m).padStart(2, '0');
+    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm} ${ampm}`;
+  } catch {
+    return dateString;
+  }
 };
 
 export const getErrorMessage = (error: any): string => {

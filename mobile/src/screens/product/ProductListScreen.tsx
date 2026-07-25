@@ -64,8 +64,8 @@ function ProductGridItem({ product, onPress, onAddToCart }: {
         )}
         <View style={styles.ratingRow}>
           <IonIcon name="star" size={11} color="#F5A623" />
-          <Text style={[styles.star, { marginLeft: 2 }]}>{product.average_rating.toFixed(1)}</Text>
-          <Text style={styles.soldText}> · {product.sold_count}</Text>
+          <Text style={[styles.star, { marginLeft: 2 }]}>{(Number(product.average_rating) || 0).toFixed(1)}</Text>
+          <Text style={styles.soldText}> · {(product.sold_count ?? 0)}</Text>
         </View>
       </View>
     </TouchableOpacity>
