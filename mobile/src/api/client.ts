@@ -59,16 +59,17 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // HMAC request signature — skip ping (no signing required)
+    // HMAC request signature — only for auth write endpoints and authenticated requests.
+    // Public read-only routes (products, categories, CMS) no longer require signing.
     const path = config.url ?? '';
-    if (!path.includes('/ping')) {
-      const method = config.method ?? 'get';
-      // Resolve full path relative to baseURL for signing
+    const method = (config.method ?? 'get').toLowerCase();
+    const isAuthWrite = path.includes('/auth/') && method !== 'get';
+    const isAuthenticated = !!token;
+    if ((isAuthWrite || isAuthenticated) && !path.includes('/ping')) {
       const base = (config.baseURL ?? apiClient.defaults.baseURL ?? '').replace(/\/$/, '');
       const fullPath = base + (path.startsWith('/') ? path : '/' + path);
-      // Extract just the path portion (strip domain)
       const urlPath = fullPath.replace(/^https?:\/\/[^/]+/, '');
-      const { _t, _s } = await signRequest(method, urlPath);
+      const { _t, _s } = signRequest(method, urlPath);
       config.params = { ...(config.params ?? {}), _t, _s };
     }
 

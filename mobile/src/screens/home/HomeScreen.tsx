@@ -345,6 +345,7 @@ export default function HomeScreen({ navigation }: any) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const { fetchCart, cart, addItem } = useCartStore();
   const { user } = useAuthStore();
   const { unreadCount, fetchUnreadCount } = useNotificationStore();
@@ -411,9 +412,14 @@ export default function HomeScreen({ navigation }: any) {
     // Popup only once per session, not on pull-to-refresh
     let popupShown = fromRefresh;
 
+    setLoadError('');
     const bannersP = cmsApi.banners('slider')
       .then(r => { const d = r.data.data; setBanners(d); return d; })
-      .catch(() => null);
+      .catch((e: any) => {
+        const msg = e?.response?.data?.message || e?.message || 'Network error';
+        setLoadError(msg);
+        return null;
+      });
 
     if (!popupShown) {
       cmsApi.banners('popup')
@@ -575,6 +581,18 @@ export default function HomeScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
+        {/* ── API Error Banner ── */}
+        {loadError !== '' && categories.length === 0 && (
+          <TouchableOpacity
+            style={styles.errorBanner}
+            onPress={onRefresh}
+            activeOpacity={0.8}
+          >
+            <IonIcon name="warning-outline" size={16} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.errorBannerText}>Could not load data: {loadError}. Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
+
         {/* ── Auto-sliding Banner ── */}
         <AutoBannerSlider banners={banners} navigation={navigation} />
 
@@ -697,6 +715,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border,
   },
   searchPlaceholder: { color: COLORS.textMuted, fontSize: 14 },
+
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.danger, paddingHorizontal: 16, paddingVertical: 10,
+  },
+  errorBannerText: { color: '#fff', fontSize: 12, flex: 1 },
 
   // Banner
   bannerWrapper: { marginBottom: 4 },
