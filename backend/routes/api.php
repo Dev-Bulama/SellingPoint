@@ -21,16 +21,10 @@ Route::prefix('v1')->group(function () {
     // ── Paystack webhook — verified by Paystack signature, not ours ───────────
     Route::post('payments/webhook', [PaymentController::class, 'webhook']);
 
-    // ── Public signed routes ── requires valid HMAC signature (_t + _s params) ─
-    Route::middleware(['api.sign', 'throttle:public-api'])->group(function () {
-
-        // Auth (extra-tight rate limit via named throttle)
-        Route::prefix('auth')->middleware('throttle:auth')->group(function () {
-            Route::post('register',        [AuthController::class, 'register']);
-            Route::post('login',           [AuthController::class, 'login']);
-            Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-            Route::post('reset-password',  [AuthController::class, 'resetPassword']);
-        });
+    // ── Public read-only routes ── rate limited, no HMAC required ────────────
+    // Products, categories, CMS are public catalogue data — rate limiting is
+    // sufficient. HMAC signing is reserved for write / auth operations.
+    Route::middleware('throttle:public-api')->group(function () {
 
         // Products
         Route::prefix('products')->name('api.products.')->group(function () {
@@ -57,6 +51,14 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::get('app/settings', [CmsController::class, 'settings']);
+    });
+
+    // ── Auth routes ── HMAC signed + tight rate limit ────────────────────────
+    Route::middleware(['api.sign', 'throttle:auth'])->prefix('auth')->group(function () {
+        Route::post('register',        [AuthController::class, 'register']);
+        Route::post('login',           [AuthController::class, 'login']);
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('reset-password',  [AuthController::class, 'resetPassword']);
     });
 
     // ── Authenticated routes ── Sanctum token + HMAC signature ────────────────
