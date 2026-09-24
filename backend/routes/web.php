@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Page;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Route;
 
@@ -38,3 +39,20 @@ Route::get('/', function () {
         'appStoreUrl'  => Setting::get('app_store_url'),
     ]);
 });
+
+// ── CMS public pages (privacy-policy, terms-and-conditions, about-us, etc.) ──
+Route::get('/{slug}', function (string $slug) {
+    $page = Page::where('slug', $slug)->where('is_active', true)->firstOrFail();
+
+    $appName      = Setting::get('app_name', 'SellingPoint');
+    $primaryColor = Setting::get('brand_color', '#F97316');
+    $primaryDark  = Setting::get('brand_color_dark', '#EA6C0B');
+
+    $appLogo = Setting::get('app_logo');
+    if ($appLogo && !str_starts_with($appLogo, 'http')) {
+        $appLogo = request()->getSchemeAndHttpHost() . '/storage/' . ltrim($appLogo, '/');
+    }
+
+    return view('page', compact('page', 'appName', 'primaryColor', 'primaryDark', 'appLogo'));
+})->where('slug', 'privacy-policy|terms-and-conditions|about-us|data-deletion');
+
