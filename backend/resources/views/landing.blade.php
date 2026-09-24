@@ -56,6 +56,10 @@
             letter-spacing: -0.3px;
         }
         .nav-actions { display: flex; gap: 12px; align-items: center; }
+        .nav-links { display: flex; gap: 20px; align-items: center; margin-right: 16px; }
+        .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-secondary, #6B7280); text-decoration: none; transition: color .2s; }
+        .nav-links a:hover { color: var(--primary); }
+        @media (max-width: 640px) { .nav-links { display: none; } }
         .btn-outline {
             padding: 8px 20px; border-radius: 8px; border: 1.5px solid var(--primary);
             color: var(--primary); font-weight: 600; font-size: 14px;
@@ -237,6 +241,12 @@
         </div>
         <span class="nav-name">{{ $appName }}</span>
     </a>
+    <div class="nav-links">
+        <a href="/privacy-policy">Privacy Policy</a>
+        <a href="/terms-and-conditions">Terms</a>
+        <a href="/about-us">About</a>
+        <a href="/data-deletion">Data Deletion</a>
+    </div>
     <div class="nav-actions">
         <a href="/admin" class="btn-outline">Admin Panel</a>
     </div>
