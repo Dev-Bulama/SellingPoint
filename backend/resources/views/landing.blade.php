@@ -370,10 +370,14 @@
 <footer>
     <div class="footer-brand">{{ $appName }}</div>
     <div class="footer-links">
-        <a href="/admin">Admin Panel</a>
+        <a href="/privacy-policy">Privacy Policy</a>
+        <a href="/terms-and-conditions">Terms &amp; Conditions</a>
+        <a href="/about-us">About Us</a>
+        <a href="/data-deletion">Data Deletion</a>
         @if($supportEmail)
         <a href="mailto:{{ $supportEmail }}">Contact</a>
         @endif
+        <a href="/admin">Admin</a>
     </div>
     <div class="footer-copy">&copy; {{ date('Y') }} {{ $appName }}. All rights reserved.</div>
 </footer>
